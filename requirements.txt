@@ -5,3 +5,5 @@ moviepy
 requests
 beautifulsoup4
 selenium
+moviepy
+
