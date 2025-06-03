@@ -4,3 +4,4 @@ gTTS
 moviepy
 requests
 beautifulsoup4
+selenium
