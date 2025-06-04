@@ -4,6 +4,9 @@ from summarize import summarize_text
 from text_to_speech import generate_voiceover
 from video_generator import generate_video
 
+for folder in ['voices', 'videos', 'assets']:
+    os.makedirs(folder, exist_ok=True)
+
 def automate(query="productivity", max_books=1):
     book_urls = fetch_books_from_gutenberg(query, max_books)
     for url in book_urls:
