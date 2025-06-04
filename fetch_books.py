@@ -95,6 +95,30 @@ def fetch_books(query: str, max_results: int = 5) -> List[Dict]:
     print("Falling back to Project Gutenberg...")
     books = fetch_books_from_gutenberg(query, max_results)
     return books
+import requests
+
+def fetch_books_from_google(query="self-help", max_results=5):
+    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={max_results}"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        data = response.json()  # ✅ Convert response to a Python dict
+        books = []
+
+        for item in data.get('items', []):  # ✅ Now data.get works
+            volume_info = item.get('volumeInfo', {})
+            book = {
+                'title': volume_info.get('title'),
+                'authors': volume_info.get('authors', []),
+                'description': volume_info.get('description', ''),
+                'source': 'Google Books'
+            }
+            books.append(clean_book_data(book))
+        return books
+    else:
+        print(f"Failed to fetch from Google Books. Status code: {response.status_code}")
+        return []
+
 import re
 
 def clean_book_data(book: Dict, max_description_length: int = 1000) -> Dict:
