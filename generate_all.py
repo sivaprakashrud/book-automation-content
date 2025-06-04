@@ -4,7 +4,6 @@ from fetch_books import fetch_books_from_gutenberg
 from summarize import summarize_text
 from text_to_speech import generate_voiceover
 from video_generator import generate_video
-from moviepy.editor import TextClip, AudioFileClip, CompositeVideoClip
 
 for folder in ['voices', 'videos', 'assets']:
     os.makedirs(folder, exist_ok=True)
