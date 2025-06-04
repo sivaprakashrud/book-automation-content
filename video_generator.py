@@ -1,7 +1,6 @@
-from moviepy import editor as mpy
-TextClip = mpy.TextClip
-AudioFileClip = mpy.AudioFileClip
-CompositeVideoClip = mpy.CompositeVideoClip
+from moviepy.video.VideoClip import TextClip
+from moviepy.audio.io.AudioFileClip import AudioFileClip
+from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 
 def generate_video(summary_text, audio_path, output_path="final_video.mp4"):
     clip = TextClip(summary_text, fontsize=24, color='white', bg_color='black', size=(720, 1280), method='caption')
