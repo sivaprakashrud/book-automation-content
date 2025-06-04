@@ -18,7 +18,7 @@ os.makedirs("voices", exist_ok=True)
 os.makedirs("videos", exist_ok=True)
 
 # 1. Fetch Books
-titles = fetch_books_from_gutenberg("self-help")
+titles = fetch_books("self-help")
 print(f"Fetched {len(titles)} books")
 
 for i, title in enumerate(titles):
