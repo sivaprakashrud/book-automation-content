@@ -5,6 +5,10 @@ from summarize import summarize_book
 from text_to_speech import text_to_audio
 from video_generator import create_video
 
+for folder in ['voices', 'videos', 'assets']:
+    os.makedirs(folder, exist_ok=True)
+
+
 # Ensure output folders exist
 os.makedirs("summaries", exist_ok=True)
 os.makedirs("voices", exist_ok=True)
