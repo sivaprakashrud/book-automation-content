@@ -2,7 +2,7 @@
 import os
 from fetch_books import fetch_books_from_gutenberg
 from summarize import summarize_text
-from text_to_speech import text_to_audio
+from text_to_speech import generate_voiceover
 from video_generator import create_video
 
 for folder in ['voices', 'videos', 'assets']:
