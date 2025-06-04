@@ -95,3 +95,34 @@ def fetch_books(query: str, max_results: int = 5) -> List[Dict]:
     print("Falling back to Project Gutenberg...")
     books = fetch_books_from_gutenberg(query, max_results)
     return books
+import re
+
+def clean_book_data(book: Dict, max_description_length: int = 1000) -> Dict:
+    """
+    Clean and truncate book fields for safe processing.
+    """
+    # Truncate overly long descriptions
+    description = book.get('description', '')
+    if description and len(description) > max_description_length:
+        description = description[:max_description_length].rsplit('.', 1)[0] + "..."
+
+    # Clean weird characters, escape sequences, etc.
+    description = re.sub(r'\s+', ' ', description).replace('\\', '')
+
+    # Safely format title and author names
+    book['title'] = str(book.get('title', '')).strip()
+    book['authors'] = [str(a).strip() for a in book.get('authors', [])]
+    book['description'] = description.strip()
+
+    return book
+for item in data.get('items', []):
+    volume_info = item.get('volumeInfo', {})
+    book = {
+        'title': volume_info.get('title'),
+        'authors': volume_info.get('authors'),
+        'description': volume_info.get('description'),
+        'source': 'Google Books'
+    }
+    cleaned = clean_book_data(book)
+    books.append(cleaned)
+print(f"Processed Book: {cleaned['title']} by {cleaned['authors']}")
