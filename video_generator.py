@@ -1,5 +1,3 @@
-pip install moviepy
-
 from moviepy.editor import TextClip, AudioFileClip, CompositeVideoClip
 
 def generate_video(summary_text, audio_path, output_path="final_video.mp4"):
