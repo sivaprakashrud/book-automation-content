@@ -1,6 +1,6 @@
 # generate_all.py
 import os
-from fetch_books import fetch_books_from_gutenberg
+from fetch_books import fetch_books
 from summarize import summarize_text
 from text_to_speech import generate_voiceover
 from video_generator import generate_video
