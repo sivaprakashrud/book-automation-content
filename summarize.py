@@ -1,10 +1,13 @@
 from transformers import pipeline
 
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+# OLD (probably something like this)
+# summarizer = pipeline("summarization")
 
-def summarize_text(text, max_length=500, min_length=100):
-    try:
-        summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
-        return summary[0]['summary_text']
-    except Exception as e:
-        return f"Summarization failed: {str(e)}"
+# NEW — handles shorter input more appropriately
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn", max_length=60, min_length=10, do_sample=False)
+def summarize_text(text):
+    length = len(text.split())
+    max_len = min(100, max(20, int(length * 1.5)))  # adaptive length
+    summarizer = pipeline("summarization", model="facebook/bart-large-cnn", max_length=max_len, min_length=10, do_sample=False)
+    summary = summarizer(text, truncation=True)[0]['summary_text']
+    return summary
