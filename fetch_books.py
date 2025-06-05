@@ -34,9 +34,9 @@ def clean_gutendex_book(item):
     }
 
 def fetch_books(category):
-    print(f"[INFO] Fetching books in category: {productivity}")
+    print(f"[INFO] Fetching books in category: {category}")
     # Your existing logic...
-    return book_list
+
     all_books = []
     for url in BOOK_SOURCES:
         try:
