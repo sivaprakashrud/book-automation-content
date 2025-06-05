@@ -32,7 +32,7 @@ def fetch_books_from_openlibrary(query: str, max_results: int = 5) -> List[Dict]
     """
     Fetch books from Open Library API.
     """
-    url = "https://openlibrary.org/search.json"
+    url = "https://openlibrary.org/search.json" 
     params = {
         'q': query,
         'limit': max_results
