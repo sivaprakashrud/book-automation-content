@@ -7,9 +7,12 @@ from bs4 import BeautifulSoup
 import json
 
 BOOK_SOURCES = [
-    "https://example.com/api/source1",  # Replace with actual API
-    "https://example.com/api/source2"
+    "https://www.googleapis.com/books/v1/volumes?q=subject:self-help&maxResults=10",
+    "https://openlibrary.org/subjects/self-help.json?limit=10",
+    "https://gutendex.com/books?topic=self-help",
+    "https://api.nytimes.com/svc/books/v3/lists/current/self-help.json?api-key=YOUR_API_KEY"  # Optional
 ]
+
 
 MAX_DESCRIPTION_LENGTH = 2000  # Safe description limit
 
