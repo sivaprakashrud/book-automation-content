@@ -33,8 +33,8 @@ def clean_gutendex_book(item):
         "description": "No description available."  # Gutendex doesn't provide desc in this endpoint
     }
 
-def fetch_books():
-    print(f"[INFO] Fetching books in category: {category}")
+def fetch_books(category):
+    print(f"[INFO] Fetching books in category: {productivity}")
     # Your existing logic...
     return book_list
     all_books = []
