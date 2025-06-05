@@ -28,7 +28,7 @@ try:
 except Exception as e:
     print("[ERROR] Failed to fetch books:", e)
     raise
-all_books = fetch_books(category)
+all_books = fetch_books(productivity)
 
 for idx, book in enumerate(all_books):
     try:
@@ -70,16 +70,16 @@ for idx, book in enumerate(all_books):
         print(f"Reason: {e}")
         print(f"[DEBUG] Sample book: {all_books[0]}")
 
-        # 2. Summarize
+# 2. Summarize
         summary = summarize_text(title)
         with open(f"summaries/{i+1}_{title[:30]}.txt", "w", encoding="utf-8") as f:
             f.write(summary)
 
-        # 3. Text to Speech
+# 3. Text to Speech
         audio_path = f"voices/{i+1}_{title[:30]}.mp3"
         generate_voiceover(summary, audio_path)
 
-        # 4. Create Video
+ # 4. Create Video
         video_path = f"videos/{i+1}_{title[:30]}.mp4"
         generate_video(summary, audio_path, video_path)
 
