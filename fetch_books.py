@@ -38,7 +38,7 @@ def clean_book(book):
         print(f"[Warning] Skipped book due to error: {e}")
         return None
 
-def fetch_all_books():
+def fetch_books():
     all_books = []
     seen_titles = set()
 
@@ -58,4 +58,4 @@ def fetch_all_books():
         json.dump(all_books, f, indent=2, ensure_ascii=False)
 
 if __name__ == "__main__":
-    fetch_all_books()
+    fetch_books()
