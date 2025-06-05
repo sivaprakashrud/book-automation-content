@@ -20,6 +20,14 @@ os.makedirs("videos", exist_ok=True)
 # 1. Fetch Books
 titles = fetch_books("self-help")
 print(f"Fetched {len(titles)} books")
+print("[INFO] Starting script...")
+
+try:
+    titles = fetch_books("self-help")
+    print("[INFO] Fetched titles:", titles)
+except Exception as e:
+    print("[ERROR] Failed to fetch books:", e)
+    raise
 
 for i, title in enumerate(titles):
     try:
