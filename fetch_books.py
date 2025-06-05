@@ -35,35 +35,18 @@ def clean_gutendex_book(item):
 
 def fetch_books(category):
     print(f"[INFO] Fetching books in category: {category}")
-    # Your existing logic...
-
     all_books = []
+
     for url in BOOK_SOURCES:
         try:
-            print(f"Fetching from: {url}")
+            print(f"[INFO] Fetching from: {url}")
             response = requests.get(url)
             data = response.json()
-
-            # Google Books
-            if "googleapis" in url and "items" in data:
-                books = [clean_google_book(item) for item in data.get("items", [])]
-            
-            # OpenLibrary
-            elif "openlibrary" in url and "works" in data:
-                books = [clean_openlibrary_book(item) for item in data.get("works", [])]
-            
-            # Gutendex
-            elif "gutendex" in url and "results" in data:
-                books = [clean_gutendex_book(item) for item in data.get("results", [])]
-
-            else:
-                books = []
-            
+            books = data.get("books", []) if "books" in data else data  # support different formats
             all_books.extend(books)
-
         except Exception as e:
-            print(f"Error fetching from {url}: {e}")
-    
+            print(f"[ERROR] Could not fetch from {url}: {e}")
+
     return all_books
 
 if __name__ == "__main__":
@@ -73,7 +56,14 @@ if __name__ == "__main__":
         try:
             title = book.get("title", "Untitled")
             authors = ", ".join(book.get("authors", [])) if isinstance(book.get("authors"), list) else str(book.get("authors", "Unknown"))
-            description = book.get("description", "")
+            desc_raw = book.get("description", "")
+            if isinstance(desc_raw, dict):
+                description = desc_raw.get("value", "")
+            elif isinstance(desc_raw, str):
+                description = desc_raw
+            else:
+                description = ""
+
     
             # Sanitize overly long descriptions
             if len(description) > 1000:
