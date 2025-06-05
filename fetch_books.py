@@ -1,61 +1,70 @@
 import requests
 import time
 import random
+import json
 from typing import List, Dict
 from bs4 import BeautifulSoup
 
-import json
-
 BOOK_SOURCES = [
-    "https://www.googleapis.com/books/v1/volumes?q=subject:self-help&maxResults=10",
-    "https://openlibrary.org/subjects/self-help.json?limit=10",
-    "https://gutendex.com/books?topic=self-help",
-    "https://api.nytimes.com/svc/books/v3/lists/current/self-help.json?api-key=YOUR_API_KEY"  # Optional
+    "https://www.googleapis.com/books/v1/volumes?q=subject:self-help&maxResults=5",
+    "https://openlibrary.org/subjects/self-help.json?limit=5",
+    "https://gutendex.com/books?topic=self-help"
 ]
 
+def clean_google_book(item):
+    volume = item.get("volumeInfo", {})
+    return {
+        "title": volume.get("title", "No Title"),
+        "authors": volume.get("authors", ["Unknown Author"]),
+        "description": volume.get("description", "No description available.")
+    }
 
-MAX_DESCRIPTION_LENGTH = 2000  # Safe description limit
+def clean_openlibrary_book(item):
+    return {
+        "title": item.get("title", "No Title"),
+        "authors": [author.get("name") for author in item.get("authors", []) if author.get("name")],
+        "description": "No description available."  # OpenLibrary subject API doesn't include full desc
+    }
 
-def fetch_books_from_source(url):
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        return data.get("books", []) if isinstance(data, dict) else data
-    except Exception as e:
-        print(f"[Error] Failed to fetch from {url}: {e}")
-        return []
-
-def clean_book(book):
-    try:
-        title = book.get("title", "Untitled")
-        authors = book.get("authors", ["Unknown"])
-        description = book.get("description", "")
-        if len(description) > MAX_DESCRIPTION_LENGTH:
-            description = description[:MAX_DESCRIPTION_LENGTH] + "..."
-        return {"title": title, "authors": authors, "description": description}
-    except Exception as e:
-        print(f"[Warning] Skipped book due to error: {e}")
-        return None
+def clean_gutendex_book(item):
+    return {
+        "title": item.get("title", "No Title"),
+        "authors": [author.get("name") for author in item.get("authors", []) if author.get("name")],
+        "description": "No description available."  # Gutendex doesn't provide desc in this endpoint
+    }
 
 def fetch_books():
     all_books = []
-    seen_titles = set()
-
-    print("Fetching books from multiple sources...")
-
     for url in BOOK_SOURCES:
-        print(f"🔗 Fetching from: {url}")
-        books = fetch_books_from_source(url)
-        for book in books:
-            cleaned = clean_book(book)
-            if cleaned and cleaned["title"] not in seen_titles:
-                all_books.append(cleaned)
-                seen_titles.add(cleaned["title"])
+        try:
+            print(f"Fetching from: {url}")
+            response = requests.get(url)
+            data = response.json()
 
-    print(f"✅ Total books fetched: {len(all_books)}")
-    with open("books.json", "w", encoding="utf-8") as f:
-        json.dump(all_books, f, indent=2, ensure_ascii=False)
+            # Google Books
+            if "googleapis" in url and "items" in data:
+                books = [clean_google_book(item) for item in data.get("items", [])]
+            
+            # OpenLibrary
+            elif "openlibrary" in url and "works" in data:
+                books = [clean_openlibrary_book(item) for item in data.get("works", [])]
+            
+            # Gutendex
+            elif "gutendex" in url and "results" in data:
+                books = [clean_gutendex_book(item) for item in data.get("results", [])]
+
+            else:
+                books = []
+            
+            all_books.extend(books)
+
+        except Exception as e:
+            print(f"Error fetching from {url}: {e}")
+    
+    return all_books
 
 if __name__ == "__main__":
-    fetch_books()
+    books = fetch_books()
+    print(f"\n✅ Total books fetched: {len(books)}\n")
+    for i, book in enumerate(books, 1):
+        print(f"{i}. {book['title']} by {', '.join(book['authors'])}")
