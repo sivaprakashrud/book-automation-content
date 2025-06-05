@@ -18,7 +18,7 @@ os.makedirs("voices", exist_ok=True)
 os.makedirs("videos", exist_ok=True)
 
 # 1. Fetch Books
-titles = fetch_books("self-help")
+titles = fetch_books("productivity")
 print(f"Fetched {len(titles)} books")
 print("[INFO] Starting script...")
 
