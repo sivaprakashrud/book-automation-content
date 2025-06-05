@@ -24,6 +24,11 @@ print(f"Fetched {len(titles)} books")
 for i, title in enumerate(titles):
     try:
         print(f"\nProcessing Book {i+1}: {title}")
+MAX_DESCRIPTION_LENGTH = 2000  # or any safe limit your model handles well
+
+def truncate_description(description):
+    return description[:MAX_DESCRIPTION_LENGTH] + "..." if len(description) > MAX_DESCRIPTION_LENGTH else description
+book["description"] = truncate_description(book.get("description", ""))
 
         # 2. Summarize
         summary = summarize_text(title)
