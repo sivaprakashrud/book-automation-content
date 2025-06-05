@@ -28,7 +28,7 @@ try:
 except Exception as e:
     print("[ERROR] Failed to fetch books:", e)
     raise
-all_books = fetch_books(productivity)
+all_books = fetch_books("productivity")
 
 for idx, book in enumerate(all_books):
     try:
