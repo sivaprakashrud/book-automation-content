@@ -34,7 +34,7 @@ def clean_gutendex_book(item):
     }
 
 def fetch_books():
-     print(f"[INFO] Fetching books in category: {category}")
+    print(f"[INFO] Fetching books in category: {category}")
     # Your existing logic...
     return book_list
     all_books = []
