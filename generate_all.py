@@ -85,4 +85,4 @@ for idx, book in enumerate(all_books):
 
     except Exception as e:
         print(f"Error with {title}: {e}")
-        continue
+        continue 
