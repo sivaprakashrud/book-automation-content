@@ -28,6 +28,7 @@ try:
 except Exception as e:
     print("[ERROR] Failed to fetch books:", e)
     raise
+all_books = fetch_books(category)
 
 for idx, book in enumerate(all_books):
     try:
@@ -67,6 +68,7 @@ for idx, book in enumerate(all_books):
     except Exception as e:
         print(f"[ERROR] Failed to process book {idx + 1}: {book}")
         print(f"Reason: {e}")
+print(f"[DEBUG] Sample book: {all_books[0]}")
 
         # 2. Summarize
         summary = summarize_text(title)
