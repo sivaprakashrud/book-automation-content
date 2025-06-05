@@ -68,3 +68,4 @@ if __name__ == "__main__":
     print(f"\n✅ Total books fetched: {len(books)}\n")
     for i, book in enumerate(books, 1):
         print(f"{i}. {book['title']} by {', '.join(book['authors'])}")
+ 
