@@ -1,152 +1,72 @@
 import requests
-from typing import List, Dict, Optional
+import time
+import random
+from typing import List, Dict
+from bs4 import BeautifulSoup
 
-def fetch_books_from_google(query: str, max_results: int = 5) -> List[Dict]:
-    """
-    Fetch books from Google Books API.
-    """
-    url = "https://www.googleapis.com/books/v1/volumes"
-    params = {
-        'q': query,
-        'maxResults': max_results
-    }
+
+def fetch_books_from_google_books(query: str = "self-help", max_results: int = 5) -> List[Dict]:
+    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={max_results}"
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url)
         response.raise_for_status()
         data = response.json()
+
         books = []
         for item in data.get('items', []):
             volume_info = item.get('volumeInfo', {})
             books.append({
-                'title': volume_info.get('title'),
-                'authors': volume_info.get('authors'),
-                'description': volume_info.get('description'),
-                'source': 'Google Books'
+                'title': volume_info.get('title', 'No Title'),
+                'authors': volume_info.get('authors', ['Unknown']),
+                'description': volume_info.get('description', 'No Description')
             })
         return books
-    except requests.RequestException as e:
-        print(f"Google Books API error: {e}")
+    except Exception as e:
+        print(f"Google Books fetch failed: {e}")
         return []
 
-def fetch_books_from_openlibrary(query: str, max_results: int = 5) -> List[Dict]:
-    """
-    Fetch books from Open Library API.
-    """
-    url = "https://openlibrary.org/search.json" 
-    params = {
-        'q': query,
-        'limit': max_results
-    }
+
+def fetch_books_from_gutenberg(query: str = "self-help", max_results: int = 5) -> List[Dict]:
+    base_url = "https://www.gutenberg.org/ebooks/search/?query="
+    search_url = f"{base_url}{query.replace(' ', '+')}"
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(search_url)
         response.raise_for_status()
-        data = response.json()
+        soup = BeautifulSoup(response.text, "html.parser")
+        book_elements = soup.select("li.booklink")[:max_results]
+
         books = []
-        for doc in data.get('docs', []):
+        for book in book_elements:
+            title = book.select_one("span.title").text.strip() if book.select_one("span.title") else "No Title"
+            author = book.select_one("span.subtitle").text.strip() if book.select_one("span.subtitle") else "Unknown"
             books.append({
-                'title': doc.get('title'),
-                'authors': doc.get('author_name'),
-                'description': None,  # Open Library search API doesn't provide descriptions
-                'source': 'Open Library'
+                'title': title,
+                'authors': [author],
+                'description': f"Project Gutenberg eBook titled '{title}' by {author}"
             })
         return books
-    except requests.RequestException as e:
-        print(f"Open Library API error: {e}")
+    except Exception as e:
+        print(f"Gutenberg fetch failed: {e}")
         return []
 
-def fetch_books_from_gutenberg(query: str, max_results: int = 5) -> List[Dict]:
-    """
-    Fetch books from Project Gutenberg via Gutendex API.
-    """
-    url = "https://gutendex.com/books"
-    params = {
-        'search': query,
-        'page': 1
-    }
-    try:
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        books = []
-        for book in data.get('results', [])[:max_results]:
-            books.append({
-                'title': book.get('title'),
-                'authors': [author.get('name') for author in book.get('authors', [])],
-                'description': None,  # Gutendex doesn't provide descriptions
-                'source': 'Project Gutenberg',
-                'download_url': book.get('formats', {}).get('text/plain; charset=utf-8')
-            })
-        return books
-    except requests.RequestException as e:
-        print(f"Gutendex API error: {e}")
-        return []
 
-def fetch_books(query: str, max_results: int = 5) -> List[Dict]:
-    """
-    Fetch books from multiple sources with fallback.
-    """
-    books = fetch_books_from_google(query, max_results)
-    if books:
-        return books
-    print("Falling back to Open Library...")
-    books = fetch_books_from_openlibrary(query, max_results)
-    if books:
-        return books
-    print("Falling back to Project Gutenberg...")
-    books = fetch_books_from_gutenberg(query, max_results)
-    return books
-import requests
+def fetch_books(query: str = "self-help", max_results: int = 5) -> List[Dict]:
+    print("Fetching books from multiple sources...")
+    books = []
 
-def fetch_books_from_google(query="self-help", max_results=5):
-    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={max_results}"
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        data = response.json()  # ✅ Convert response to a Python dict
-        books = []
+    google_books = fetch_books_from_google_books(query, max_results)
+    gutenberg_books = fetch_books_from_gutenberg(query, max_results)
 
-        for item in data.get('items', []):  # ✅ Now data.get works
-            volume_info = item.get('volumeInfo', {})
-            book = {
-                'title': volume_info.get('title'),
-                'authors': volume_info.get('authors', []),
-                'description': volume_info.get('description', ''),
-                'source': 'Google Books'
-            }
-            books.append(clean_book_data(book))
-        return books
-    else:
-        print(f"Failed to fetch from Google Books. Status code: {response.status_code}")
-        return []
+    books.extend(google_books)
+    books.extend(gutenberg_books)
 
-import re
+    # De-duplicate by title
+    unique_titles = set()
+    filtered_books = []
+    for book in books:
+        if book['title'] not in unique_titles:
+            filtered_books.append(book)
+            unique_titles.add(book['title'])
 
-def clean_book_data(book: Dict, max_description_length: int = 1000) -> Dict:
-    """
-    Clean and truncate book fields for safe processing.
-    """
-    # Truncate overly long descriptions
-    description = book.get('description', '')
-    if description and len(description) > max_description_length:
-        description = description[:max_description_length].rsplit('.', 1)[0] + "..."
-
-    # Clean weird characters, escape sequences, etc.
-    description = re.sub(r'\s+', ' ', description).replace('\\', '')
-
-    # Safely format title and author names
-    book['title'] = str(book.get('title', '')).strip()
-    book['authors'] = [str(a).strip() for a in book.get('authors', [])]
-    book['description'] = description.strip()
-
-    return book
-for item in data.get('items', []):
-    volume_info = item.get('volumeInfo', {})
-    book = {
-        'title': volume_info.get('title'),
-        'authors': volume_info.get('authors'),
-        'description': volume_info.get('description'),
-        'source': 'Google Books'
-    }
-    cleaned = clean_book_data(book)
-    books.append(cleaned)
-print(f"Processed Book: {cleaned['title']} by {cleaned['authors']}")
+    print(f"✅ Total books fetched: {len(filtered_books)}")
+    return filtered_books[:max_results]  # Return only the top n unique books
