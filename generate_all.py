@@ -29,9 +29,44 @@ except Exception as e:
     print("[ERROR] Failed to fetch books:", e)
     raise
 
-for i, title in enumerate(titles):
+for idx, book in enumerate(all_books):
     try:
-        print(f"\nProcessing Book {i+1}: {title}")
+        # Safely extract title
+        title = book.get("title", "Untitled")
+
+        # Safely extract authors (handle list or string)
+        authors_raw = book.get("authors", [])
+        if isinstance(authors_raw, list):
+            authors = ", ".join(authors_raw)
+        elif isinstance(authors_raw, str):
+            authors = authors_raw
+        else:
+            authors = "Unknown"
+
+        # Safely extract description (handle string or dict)
+        desc_raw = book.get("description", "")
+        if isinstance(desc_raw, dict):
+            description = desc_raw.get("value", "")
+        elif isinstance(desc_raw, str):
+            description = desc_raw
+        else:
+            description = ""
+
+        # Trim overly long descriptions
+        if len(description) > 1000:
+            description = description[:1000] + "..."
+
+        print(f"[INFO] Processing Book {idx + 1}: {title}")
+        print(f"   Authors: {authors}")
+        print(f"   Description: {description}\n")
+
+        # === INSERT your book processing logic here ===
+        # e.g., create script, summary, voiceover, etc.
+        # process_book(title, authors, description)
+
+    except Exception as e:
+        print(f"[ERROR] Failed to process book {idx + 1}: {book}")
+        print(f"Reason: {e}")
 
         # 2. Summarize
         summary = summarize_text(title)
