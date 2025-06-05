@@ -69,6 +69,24 @@ def fetch_books(category):
 if __name__ == "__main__":
     books = fetch_books()
     print(f"\n✅ Total books fetched: {len(books)}\n")
-    for i, book in enumerate(books, 1):
-        print(f"{i}. {book['title']} by {', '.join(book['authors'])}")
+    for idx, book in enumerate(all_books):
+    try:
+        title = book.get("title", "Untitled")
+        authors = ", ".join(book.get("authors", [])) if isinstance(book.get("authors"), list) else str(book.get("authors", "Unknown"))
+        description = book.get("description", "")
+
+        # Sanitize overly long descriptions
+        if len(description) > 1000:
+            description = description[:1000] + "..."
+
+        print(f"[INFO] Processing Book {idx + 1}: {title}")
+        print(f"   Authors: {authors}")
+        print(f"   Description: {description}\n")
+
+        # Add your own processing here (summarize, voiceover, etc.)
+
+    except Exception as e:
+        print(f"[ERROR] Failed to process book {idx + 1}: {book}")
+        print(f"Reason: {e}")
+
  
