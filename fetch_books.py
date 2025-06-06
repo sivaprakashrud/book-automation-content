@@ -4,34 +4,13 @@ import random
 import json
 from typing import List, Dict
 from bs4 import BeautifulSoup
+import requests
 
 BOOK_SOURCES = [
     "https://www.googleapis.com/books/v1/volumes?q=subject:self-help&maxResults=5",
     "https://openlibrary.org/subjects/self-help.json?limit=5",
     "https://gutendex.com/books?topic=self-help"
 ]
-
-def clean_google_book(item):
-    volume = item.get("volumeInfo", {})
-    return {
-        "title": volume.get("title", "No Title"),
-        "authors": volume.get("authors", ["Unknown Author"]),
-        "description": volume.get("description", "No description available.")
-    }
-
-def clean_openlibrary_book(item):
-    return {
-        "title": item.get("title", "No Title"),
-        "authors": [author.get("name") for author in item.get("authors", []) if author.get("name")],
-        "description": "No description available."  # OpenLibrary subject API doesn't include full desc
-    }
-
-def clean_gutendex_book(item):
-    return {
-        "title": item.get("title", "No Title"),
-        "authors": [author.get("name") for author in item.get("authors", []) if author.get("name")],
-        "description": "No description available."  # Gutendex doesn't provide desc in this endpoint
-    }
 
 def fetch_books(category):
     print(f"[INFO] Fetching books in category: {category}")
@@ -42,41 +21,43 @@ def fetch_books(category):
             print(f"[INFO] Fetching from: {url}")
             response = requests.get(url)
             data = response.json()
-            books = data.get("books", []) if "books" in data else data  # support different formats
-            all_books.extend(books)
-        except Exception as e:
-            print(f"[ERROR] Could not fetch from {url}: {e}")
 
+            # Google Books API
+            if "googleapis" in url:
+                items = data.get("items", [])
+                for item in items:
+                    volume = item.get("volumeInfo", {})
+                    book = {
+                        "title": volume.get("title", "Untitled"),
+                        "authors": volume.get("authors", ["Unknown"]),
+                        "description": volume.get("description", "No description.")
+                    }
+                    all_books.append(book)
+
+            # OpenLibrary API
+            elif "openlibrary" in url:
+                works = data.get("works", [])
+                for item in works:
+                    book = {
+                        "title": item.get("title", "Untitled"),
+                        "authors": [a.get("name", "Unknown") for a in item.get("authors", [])],
+                        "description": item.get("description", {}).get("value") if isinstance(item.get("description"), dict) else item.get("description", "No description.")
+                    }
+                    all_books.append(book)
+
+            # Gutendex API
+            elif "gutendex" in url:
+                results = data.get("results", [])
+                for item in results:
+                    book = {
+                        "title": item.get("title", "Untitled"),
+                        "authors": [a.get("name", "Unknown") for a in item.get("authors", [])],
+                        "description": "No description."  # Gutendex doesn't provide one
+                    }
+                    all_books.append(book)
+
+        except Exception as e:
+            print(f"[ERROR] Failed to fetch from {url}: {e}")
+
+    print(f"[INFO] Fetched {len(all_books)} books.")
     return all_books
-
-if __name__ == "__main__":
-    books = fetch_books()
-    print(f"\n✅ Total books fetched: {len(books)}\n")
-    for idx, book in enumerate(all_books):
-        try:
-            title = book.get("title", "Untitled")
-            authors = ", ".join(book.get("authors", [])) if isinstance(book.get("authors"), list) else str(book.get("authors", "Unknown"))
-            desc_raw = book.get("description", "")
-            if isinstance(desc_raw, dict):
-                description = desc_raw.get("value", "")
-            elif isinstance(desc_raw, str):
-                description = desc_raw
-            else:
-                description = ""
-
-    
-            # Sanitize overly long descriptions
-            if len(description) > 1000:
-                description = description[:1000] + "..."
-    
-            print(f"[INFO] Processing Book {idx + 1}: {title}")
-            print(f"   Authors: {authors}")
-            print(f"   Description: {description}\n")
-    
-            # Add your own processing here (summarize, voiceover, etc.)
-    
-        except Exception as e:
-            print(f"[ERROR] Failed to process book {idx + 1}: {book}")
-            print(f"Reason: {e}")
-
- 
