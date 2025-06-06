@@ -5,6 +5,8 @@ import json
 from typing import List, Dict
 from bs4 import BeautifulSoup
 import requests
+import csv
+import os
 
 BOOK_SOURCES = [
     "https://www.googleapis.com/books/v1/volumes?q=subject:self-help&maxResults=5",
@@ -61,3 +63,20 @@ def fetch_books(category):
 
     print(f"[INFO] Fetched {len(all_books)} books.")
     return all_books
+
+# Create output directory if it doesn't exist
+os.makedirs("output", exist_ok=True)
+
+# Save to JSON
+with open("output/books.json", "w", encoding="utf-8") as f:
+    json.dump(books, f, ensure_ascii=False, indent=4)
+
+# Save to CSV
+csv_fields = ["title", "author", "description", "source"]
+with open("output/books.csv", "w", encoding="utf-8", newline="") as f:
+    writer = csv.DictWriter(f, fieldnames=csv_fields)
+    writer.writeheader()
+    for book in books:
+        writer.writerow(book)
+
+print("[INFO] Book data saved to output/books.json and output/books.csv")
