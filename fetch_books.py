@@ -39,7 +39,11 @@ def fetch_from_google_books(query="productivity", limit=5):
         print(f"[ERROR] Failed to fetch from Google Books: {e}")
         return []
 
-def save_books_to_file(book_list, filename="books.json"):
+import os
+import json
+from your_module import fetch_from_openlibrary, fetch_from_google_books  # replace with your actual import paths
+
+def save_books_to_file(book_list, filename="data/books.json"):
     try:
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(book_list, f, indent=4, ensure_ascii=False)
@@ -51,7 +55,7 @@ def fetch_books():
     all_books = []
     all_books.extend(fetch_from_openlibrary())
     all_books.extend(fetch_from_google_books())
-    save_books_to_file(all_books)
+    save_books_to_file(all_books, filename="data/books.json")
 
 if __name__ == "__main__":
     os.makedirs("data", exist_ok=True)
