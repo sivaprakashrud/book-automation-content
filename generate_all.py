@@ -1,35 +1,23 @@
-import os
-from fetch_books import fetch_books_to_csv
-from summarize_books import summarize_books_from_csv
-from text_to_audio import text_to_audio
-from create_video import create_video
-import csv
+# generate_all.py
+import json
+from fetch_books import fetch_books
+from summarize import summarize_text
+from text_voice_generator import generate_text_script, generate_voice
 
-# Set up folders
-os.makedirs("voices", exist_ok=True)
-os.makedirs("videos", exist_ok=True)
+print("[INFO] Starting script...")
+books = fetch_books("self-help")
 
-# Step 1: Fetch books and save to books.csv
-print("📚 Fetching books...")
-fetch_books_to_csv()
+for i, book in enumerate(books):
+    print(f"[INFO] Processing Book {i+1}: {book['title']}")
+    book['summary'] = summarize_text(book['description'])
+    script = generate_text_script(book)
+    filename = f"book_{i+1}"
+    voice_path = generate_voice(script, filename)
+    book['voice_path'] = voice_path
 
-# Step 2: Summarize using Cohere API
-print("🧠 Summarizing books...")
-summarize_books_from_csv()
+# Save to JSON
+os.makedirs("output", exist_ok=True)
+with open("output/books.json", "w", encoding="utf-8") as f:
+    json.dump(books, f, ensure_ascii=False, indent=4)
 
-# Step 3–5: Convert to audio + create video
-with open("summaries.csv", newline='', encoding='utf-8') as file:
-    reader = csv.DictReader(file)
-    for idx, row in enumerate(reader, 1):
-        title = row["title"]
-        summary = row["summary"]
-        
-        print(f"\n🎤 [{idx}] Converting '{title}' to voice...")
-        audio_path = f"voices/{title[:50].replace(' ', '_')}.mp3"
-        text_to_audio(summary, audio_path)
-
-        print(f"🎞️  Generating video for '{title}'...")
-        video_path = f"videos/{title[:50].replace(' ', '_')}.mp4"
-        create_video(summary, audio_path, video_path)
-
-print("\n✅ All videos generated in the 'videos/' folder.")
+print("[INFO] All done. Output saved to output/books.json")
