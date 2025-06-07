@@ -14,7 +14,7 @@ BOOK_SOURCES = [
     "https://gutendex.com/books?topic=self-help"
 ]
 
-def fetch_books(category):
+def fetch_books(category="self-help"):
     print(f"[INFO] Fetching books in category: {category}")
     all_books = []
 
@@ -24,63 +24,37 @@ def fetch_books(category):
             response = requests.get(url)
             data = response.json()
 
-            # Google Books API
-            if "googleapis" in url:
-                items = data.get("items", [])
-                for item in items:
-                    volume = item.get("volumeInfo", {})
+            if "items" in data:  # Google Books
+                for item in data["items"]:
                     book = {
-                        "title": volume.get("title", "Untitled"),
-                        "authors": volume.get("authors", ["Unknown"]),
-                        "description": volume.get("description", "No description.")
+                        "title": item["volumeInfo"].get("title", "Untitled"),
+                        "authors": item["volumeInfo"].get("authors", []),
+                        "description": item["volumeInfo"].get("description", "No description available")
                     }
                     all_books.append(book)
 
-            # OpenLibrary API
-            elif "openlibrary" in url:
-                works = data.get("works", [])
-                for item in works:
+            elif "works" in data:  # OpenLibrary
+                for work in data["works"]:
                     book = {
-                        "title": item.get("title", "Untitled"),
-                        "authors": [a.get("name", "Unknown") for a in item.get("authors", [])],
-                        "description": item.get("description", {}).get("value") if isinstance(item.get("description"), dict) else item.get("description", "No description.")
+                        "title": work.get("title", "Untitled"),
+                        "authors": [a["name"] for a in work.get("authors", []) if "name" in a],
+                        "description": work.get("description", {}).get("value", "No description available") if isinstance(work.get("description"), dict) else work.get("description", "No description available")
                     }
                     all_books.append(book)
 
-            # Gutendex API
-            elif "gutendex" in url:
-                results = data.get("results", [])
-                for item in results:
+            elif "results" in data:  # Gutendex
+                for result in data["results"]:
                     book = {
-                        "title": item.get("title", "Untitled"),
-                        "authors": [a.get("name", "Unknown") for a in item.get("authors", [])],
-                        "description": "No description."  # Gutendex doesn't provide one
+                        "title": result.get("title", "Untitled"),
+                        "authors": [a["name"] for a in result.get("authors", [])],
+                        "description": "No description available"
                     }
                     all_books.append(book)
 
         except Exception as e:
-            print(f"[ERROR] Failed to fetch from {url}: {e}")
+            print(f"[ERROR] Failed to process source {url}: {e}")
 
-    print(f"[INFO] Fetched {len(all_books)} books.")
+    print(f"[INFO] Fetched {len(all_books)} books")
     return all_books
-books = [
-    {"title": "Book One", "author": "Author A", "summary": "This is a summary."},
-    {"title": "Book Two", "author": "Author B", "summary": "Another summary."}
-]
 
-# Ensure output directory exists
-os.makedirs("output", exist_ok=True)
 
-# Save to JSON
-with open("output/books.json", "w", encoding="utf-8") as f:
-    json.dump(books, f, ensure_ascii=False, indent=4)
-
-# Save to CSV
-csv_fields = ["title", "author", "description", "source"]
-with open("output/books.csv", "w", encoding="utf-8", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=csv_fields)
-    writer.writeheader()
-    for book in books:
-        writer.writerow(book)
-
-print("[INFO] Book data saved to output/books.json and output/books.csv")
