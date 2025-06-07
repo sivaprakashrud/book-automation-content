@@ -1,78 +1,35 @@
-import requests
-import json
+import os
+from fetch_books import fetch_books_to_csv
+from summarize_books import summarize_books_from_csv
+from text_to_audio import text_to_audio
+from create_video import create_video
+import csv
 
-BOOK_SOURCES = [
-    "https://www.googleapis.com/books/v1/volumes?q=subject:self-help&maxResults=5",
-    "https://openlibrary.org/subjects/self-help.json?limit=5",
-    "https://gutendex.com/books?topic=self-help"
-]
+# Set up folders
+os.makedirs("voices", exist_ok=True)
+os.makedirs("videos", exist_ok=True)
 
-def fetch_books(category):
-    print(f"[INFO] Fetching books in category: {category}")
-    all_books = []
+# Step 1: Fetch books and save to books.csv
+print("📚 Fetching books...")
+fetch_books_to_csv()
 
-    for url in BOOK_SOURCES:
-        try:
-            print(f"[INFO] Fetching from: {url}")
-            response = requests.get(url)
-            data = response.json()
+# Step 2: Summarize using Cohere API
+print("🧠 Summarizing books...")
+summarize_books_from_csv()
 
-            # Google Books API
-            if "googleapis" in url:
-                items = data.get("items", [])
-                for item in items:
-                    volume = item.get("volumeInfo", {})
-                    book = {
-                        "title": volume.get("title", "Untitled"),
-                        "authors": volume.get("authors", ["Unknown"]),
-                        "description": volume.get("description", "No description.")
-                    }
-                    all_books.append(book)
+# Step 3–5: Convert to audio + create video
+with open("summaries.csv", newline='', encoding='utf-8') as file:
+    reader = csv.DictReader(file)
+    for idx, row in enumerate(reader, 1):
+        title = row["title"]
+        summary = row["summary"]
+        
+        print(f"\n🎤 [{idx}] Converting '{title}' to voice...")
+        audio_path = f"voices/{title[:50].replace(' ', '_')}.mp3"
+        text_to_audio(summary, audio_path)
 
-            # OpenLibrary API
-            elif "openlibrary" in url:
-                works = data.get("works", [])
-                for item in works:
-                    description = item.get("description", {})
-                    if isinstance(description, dict):
-                        description = description.get("value", "No description.")
-                    elif not isinstance(description, str):
-                        description = "No description."
+        print(f"🎞️  Generating video for '{title}'...")
+        video_path = f"videos/{title[:50].replace(' ', '_')}.mp4"
+        create_video(summary, audio_path, video_path)
 
-                    book = {
-                        "title": item.get("title", "Untitled"),
-                        "authors": [a.get("name", "Unknown") for a in item.get("authors", [])],
-                        "description": description
-                    }
-                    all_books.append(book)
-
-            # Gutendex API
-            elif "gutendex" in url:
-                results = data.get("results", [])
-                for item in results:
-                    book = {
-                        "title": item.get("title", "Untitled"),
-                        "authors": [a.get("name", "Unknown") for a in item.get("authors", [])],
-                        "description": "No description."  # Gutendex doesn't provide one
-                    }
-                    all_books.append(book)
-
-        except Exception as e:
-            print(f"[ERROR] Failed to fetch from {url}: {e}")
-
-    print(f"[INFO] Fetched {len(all_books)} books.")
-    return all_books
-
-
-if __name__ == "__main__":
-    print("[INFO] Starting script...")
-    books = fetch_books("self-help")
-
-    for idx, book in enumerate(books):
-        try:
-            print(f"[INFO] Processing Book {idx+1}: {book['title']}")
-            print(f"  Title: {book['title']}")
-            print(f"  Author(s): {', '.join(book['authors'])}")
-            print(f"  Description: {book['description'][:150]}...\n")
-        except Exception as e:
-            print(f"[ERROR] Failed to process book {idx+1}: {e}")
+print("\n✅ All videos generated in the 'videos/' folder.")
