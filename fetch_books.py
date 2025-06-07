@@ -1,6 +1,32 @@
 import os
 import json
 import requests
+import os
+import json
+
+# Sample data to simulate successful book fetching
+sample_books = [
+    {
+        "title": "Atomic Habits",
+        "author": "James Clear",
+        "content": "Atomic Habits is a guide on how to build good habits and break bad ones...",
+    },
+    {
+        "title": "Deep Work",
+        "author": "Cal Newport",
+        "content": "Deep Work teaches you how to focus without distraction on cognitively demanding tasks...",
+    },
+]
+
+# Ensure data directory exists
+os.makedirs("data", exist_ok=True)
+
+# Save the sample data to books.json
+books_file_path = "data/books.json"
+with open(books_file_path, "w", encoding="utf-8") as f:
+    json.dump(sample_books, f, indent=4, ensure_ascii=False)
+
+books_file_path  # Return path for confirmation
 
 # Save the fetched books to local file
 def save_books_to_file(book_list, filename="data/books.json"):
