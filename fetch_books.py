@@ -1,60 +1,58 @@
 import requests
-import time
-import random
 import json
-from typing import List, Dict
-from bs4 import BeautifulSoup
-import requests
-import csv
 import os
 
-BOOK_SOURCES = [
-    "https://www.googleapis.com/books/v1/volumes?q=subject:self-help&maxResults=5",
-    "https://openlibrary.org/subjects/self-help.json?limit=5",
-    "https://gutendex.com/books?topic=self-help"
-]
+def fetch_from_openlibrary(subject="productivity", limit=5):
+    url = f"https://openlibrary.org/subjects/{subject}.json?limit={limit}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        books = []
+        for book in data.get("works", []):
+            books.append({
+                "title": book.get("title", "Untitled"),
+                "author": book.get("authors", [{}])[0].get("name", "Unknown Author"),
+                "source": "openlibrary"
+            })
+        return books
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch from OpenLibrary: {e}")
+        return []
 
-def fetch_books(category="self-help"):
-    print(f"[INFO] Fetching books in category: {category}")
+def fetch_from_google_books(query="productivity", limit=5):
+    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={limit}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        books = []
+        for item in data.get("items", []):
+            volume = item.get("volumeInfo", {})
+            books.append({
+                "title": volume.get("title", "Untitled"),
+                "author": ", ".join(volume.get("authors", ["Unknown Author"])),
+                "source": "google_books"
+            })
+        return books
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch from Google Books: {e}")
+        return []
+
+def save_books_to_file(book_list, filename="books.json"):
+    try:
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(book_list, f, indent=4, ensure_ascii=False)
+        print(f"[INFO] Saved {len(book_list)} books to {filename}")
+    except Exception as e:
+        print(f"[ERROR] Failed to save books to file: {e}")
+
+def fetch_books():
     all_books = []
+    all_books.extend(fetch_from_openlibrary())
+    all_books.extend(fetch_from_google_books())
+    save_books_to_file(all_books)
 
-    for url in BOOK_SOURCES:
-        try:
-            print(f"[INFO] Fetching from: {url}")
-            response = requests.get(url)
-            data = response.json()
-
-            if "items" in data:  # Google Books
-                for item in data["items"]:
-                    book = {
-                        "title": item["volumeInfo"].get("title", "Untitled"),
-                        "authors": item["volumeInfo"].get("authors", []),
-                        "description": item["volumeInfo"].get("description", "No description available")
-                    }
-                    all_books.append(book)
-
-            elif "works" in data:  # OpenLibrary
-                for work in data["works"]:
-                    book = {
-                        "title": work.get("title", "Untitled"),
-                        "authors": [a["name"] for a in work.get("authors", []) if "name" in a],
-                        "description": work.get("description", {}).get("value", "No description available") if isinstance(work.get("description"), dict) else work.get("description", "No description available")
-                    }
-                    all_books.append(book)
-
-            elif "results" in data:  # Gutendex
-                for result in data["results"]:
-                    book = {
-                        "title": result.get("title", "Untitled"),
-                        "authors": [a["name"] for a in result.get("authors", [])],
-                        "description": "No description available"
-                    }
-                    all_books.append(book)
-
-        except Exception as e:
-            print(f"[ERROR] Failed to process source {url}: {e}")
-
-    print(f"[INFO] Fetched {len(all_books)} books")
-    return all_books
-
-
+if __name__ == "__main__":
+    os.makedirs("data", exist_ok=True)
+    fetch_books()
