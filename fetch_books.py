@@ -2,6 +2,7 @@ import os
 import json
 import requests
 os.makedirs("data", exist_ok=True)
+
 def fetch_from_openlibrary():
     print("[INFO] Fetching books from OpenLibrary...")
     books = []
@@ -45,7 +46,9 @@ def fetch_from_google_books():
         print(f"[ERROR] Google Books fetch failed: {e}")
     return books
 
-def save_books_to_file(book_list, filename="data/books.json"):
+BOOK_PATH = "data/books.json"
+
+def save_books_to_file(book_list, filename=BOOK_PATH):
     try:
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(book_list, f, indent=4, ensure_ascii=False)
@@ -57,8 +60,8 @@ def fetch_books():
     all_books = []
     all_books.extend(fetch_from_openlibrary())
     all_books.extend(fetch_from_google_books())
-    save_books_to_file(all_books, filename="data/books.json")
+    save_books_to_file(all_books)
 
 if __name__ == "__main__":
-    os.makedirs("data", exist_ok=True)
+    os.makedirs("data", exist_ok=True)  # Make sure 'data' folder exists
     fetch_books()
