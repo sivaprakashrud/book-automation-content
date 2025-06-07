@@ -44,7 +44,7 @@ def fetch_from_google_books():
     except Exception as e:
         print(f"[ERROR] Google Books fetch failed: {e}")
     return books
-
+os.makedirs("data", exist_ok=True)
 def save_books_to_file(book_list, filename="data/books.json"):
     try:
         with open(filename, "w", encoding="utf-8") as f:
