@@ -63,8 +63,12 @@ def fetch_books(category):
 
     print(f"[INFO] Fetched {len(all_books)} books.")
     return all_books
+books = [
+    {"title": "Book One", "author": "Author A", "summary": "This is a summary."},
+    {"title": "Book Two", "author": "Author B", "summary": "Another summary."}
+]
 
-# Create output directory if it doesn't exist
+# Ensure output directory exists
 os.makedirs("output", exist_ok=True)
 
 # Save to JSON
