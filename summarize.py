@@ -10,6 +10,9 @@ BOOK_PATH = "data/books.json"
 SUMMARY_DIR = "summaries"
 os.makedirs(SUMMARY_DIR, exist_ok=True)
 
+if not os.path.exists("data/books.json"):
+    raise FileNotFoundError("❌ Missing data/books.json. Run fetch_books.py first.")
+
 # Load books
 with open(BOOK_PATH, "r", encoding="utf-8") as f:
     books = json.load(f)
