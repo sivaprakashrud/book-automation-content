@@ -5,3 +5,4 @@ moviepy
 requests
 beautifulsoup4
 selenium
+cohere
