@@ -1,40 +1,54 @@
 import os
 import json
-from transformers import pipeline
+import cohere
 
-# Load summarizer
-summarizer = pipeline("summarization", model="t5-small", tokenizer="t5-small")
+# -------- SETTINGS --------
+DATA_DIR = "data"
+BOOK_PATH = os.path.join(DATA_DIR, "books.json")
+SUMMARY_PATH = os.path.join(DATA_DIR, "summaries.json")
+COHERE_API_KEY = os.getenv("COHERE_API_KEY")  # You must set this in your GitHub Secrets or local env
 
-# Paths
-BOOK_PATH = "data/books.json"
-SUMMARY_DIR = "summaries"
-os.makedirs(SUMMARY_DIR, exist_ok=True)
+# -------- HELPER FUNCTIONS --------
+def load_books():
+    if not os.path.exists(BOOK_PATH):
+        raise FileNotFoundError(f"{BOOK_PATH} does not exist.")
+    with open(BOOK_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-if not os.path.exists("data/books.json"):
-    raise FileNotFoundError("❌ Missing data/books.json. Run fetch_books.py first.")
-
-# Load books
-with open(BOOK_PATH, "r", encoding="utf-8") as f:
-    books = json.load(f)
-
-# Summarize function
-def summarize_text(text):
-    trimmed = " ".join(text.split()[:500])
-    result = summarizer(trimmed, max_length=200, min_length=50, do_sample=False)
-    return result[0]['summary_text'].strip()
-
-# Process books
-for i, book in enumerate(books):
+def summarize_with_cohere(text):
     try:
-        title = book.get("title", f"Book_{i+1}")
-        desc = book.get("description") or book.get("summary") or "No description"
-        summary = summarize_text(desc)
-        
-        # Save summary
-        filename = os.path.join(SUMMARY_DIR, f"{title[:50].replace('/', '-')}.txt")
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write(summary)
-            
-        print(f"[✔] Summary saved: {filename}")
+        co = cohere.Client(COHERE_API_KEY)
+        response = co.summarize(
+            text=text,
+            length="short",     # Ideal for Reels
+            format="paragraph",
+            model="command-light"
+        )
+        return response.summary
     except Exception as e:
-        print(f"[✘] Failed to process book {i+1}: {e}")
+        print(f"[ERROR] Cohere summarization failed: {e}")
+        return "Summary could not be generated."
+
+def generate_summaries(book_list):
+    summaries = []
+    for idx, book in enumerate(book_list):
+        print(f"[INFO] Summarizing book {idx+1}: {book['title']}")
+        summary = summarize_with_cohere(book.get("content", ""))
+        summaries.append({
+            "title": book["title"],
+            "author": book.get("author", ""),
+            "summary": summary
+        })
+    return summaries
+
+def save_summaries(summaries):
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(SUMMARY_PATH, "w", encoding="utf-8") as f:
+        json.dump(summaries, f, indent=4, ensure_ascii=False)
+    print(f"[INFO] Saved {len(summaries)} summaries to {SUMMARY_PATH}")
+
+# -------- MAIN --------
+if __name__ == "__main__":
+    books = load_books()
+    summaries = generate_summaries(books)
+    save_summaries(summaries)
