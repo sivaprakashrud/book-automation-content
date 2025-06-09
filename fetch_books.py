@@ -5,8 +5,8 @@ import requests
 DATA_DIR = "data"
 BOOK_PATH = os.path.join(DATA_DIR, "books.json")
 
-def fetch_from_openlibrary(query="productivity"):
-    url = f"https://openlibrary.org/search.json?q={query}"
+def (query="productivity"):
+    
     try:
         response = requests.get(url, timeout=10)
         if response.status_code != 200:
@@ -20,26 +20,42 @@ def fetch_from_openlibrary(query="productivity"):
                 "author": ", ".join(doc.get("author_name", [])),
                 "content": f"Summary placeholder for '{doc.get('title')}' by {doc.get('author_name', [''])[0]}"
             })
+def fetch_from_openlibrary(query="productivity", max_results=10):
+    print("[INFO] Fetching from Google Books...")
+    books = []
+    url = f"https://openlibrary.org/search.json?q={query}&maxResults={max_results}"
+    try:
+        response = requests.get(url)
+        data = response.json()
+        for item in data.get("items", []):
+            volume_info = item.get("volumeInfo", {})
+            books.append({
+                "title": volume_info.get("title"),
+                "authors": volume_info.get("authors"),
+                "description": volume_info.get("description", ""),  # ✅ Needed for summarization
+                "text": volume_info.get("description", ""),         # ✅ Backup for summarizer
+                "source": "openlibrary"
+            })
         return books
     except Exception as e:
         print(f"[ERROR] OpenLibrary error: {e}")
         return []
 
-def fetch_from_google_books(query="productivity"):
-    url = f"https://www.googleapis.com/books/v1/volumes?q={query}"
+def fetch_from_google_books(query="productivity", max_results=10):
+    print("[INFO] Fetching from Google Books...")
+    books = []
+    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={max_results}"
     try:
-        response = requests.get(url, timeout=10)
-        if response.status_code != 200:
-            print("[ERROR] Failed to fetch from Google Books")
-            return []
+        response = requests.get(url)
         data = response.json()
-        books = []
-        for item in data.get("items", [])[:5]:  # Limit to 5 books
+        for item in data.get("items", []):
             volume_info = item.get("volumeInfo", {})
             books.append({
                 "title": volume_info.get("title"),
-                "author": ", ".join(volume_info.get("authors", [])),
-                "content": volume_info.get("description", "No description available.")
+                "authors": volume_info.get("authors"),
+                "description": volume_info.get("description", ""),  # ✅ Needed for summarization
+                "text": volume_info.get("description", ""),         # ✅ Backup for summarizer
+                "source": "Google Books"
             })
         return books
     except Exception as e:
@@ -64,3 +80,4 @@ def fetch_books():
 
 if __name__ == "__main__":
     fetch_books()
+
