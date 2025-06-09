@@ -1,23 +1,32 @@
-# generate_all.py
-import json
+import os
 from fetch_books import fetch_books
-from summarize import summarize_text
-from text_voice_generator import generate_text_script, generate_voice
+from summarize import generate_summaries
+from voice_generator import generate_voices
+from video_generator import generate_videos
 
-print("[INFO] Starting script...")
-books = fetch_books("self-help")
+def ensure_folders():
+    os.makedirs("data", exist_ok=True)
+    os.makedirs("voices", exist_ok=True)
+    os.makedirs("videos", exist_ok=True)
 
-for i, book in enumerate(books):
-    print(f"[INFO] Processing Book {i+1}: {book['title']}")
-    book['summary'] = summarize_text(book['description'])
-    script = generate_text_script(book)
-    filename = f"book_{i+1}"
-    voice_path = generate_voice(script, filename)
-    book['voice_path'] = voice_path
+def main():
+    print("\n[STEP 1] Ensuring folders exist...")
+    ensure_folders()
 
-# Save to JSON
-os.makedirs("output", exist_ok=True)
-with open("output/books.json", "w", encoding="utf-8") as f:
-    json.dump(books, f, ensure_ascii=False, indent=4)
+    print("\n[STEP 2] Fetching books...")
+    fetch_books()
 
-print("[INFO] All done. Output saved to output/books.json")
+    print("\n[STEP 3] Generating summaries...")
+    generate_summaries()
+
+    print("\n[STEP 4] Generating voiceovers...")
+    generate_voices()
+
+    print("\n[STEP 5] Creating videos...")
+    generate_videos()
+
+    print("\n✅ All tasks completed. Videos are ready in the 'videos/' folder.")
+
+if __name__ == "__main__":
+    main()
+
