@@ -1,7 +1,9 @@
 import os
 import json
-from moviepy.video.VideoClip import ColorClip, TextClip, CompositeVideoClip
+from moviepy.video.VideoClip import ColorClip, TextClip
+from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
+
 
 SUMMARY_FILE = "data/summaries.json"
 VOICE_DIR = "voices"
