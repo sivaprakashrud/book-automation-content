@@ -8,9 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-  env:
-    COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-    
+    env:
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
