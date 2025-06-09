@@ -14,8 +14,8 @@ def generate_summaries():
     with open(BOOK_PATH, "r", encoding="utf-8") as f:
         books = json.load(f)
 
-COHERE_API_KEY = os.getenv("COHERE_API_KEY", "PASTE_YOUR_KEY_HERE")
-co = cohere.Client(COHERE_API_KEY)
+    COHERE_API_KEY = os.getenv("COHERE_API_KEY", "PASTE_YOUR_KEY_HERE")
+    co = cohere.Client(COHERE_API_KEY)
 
     summaries = []
 
