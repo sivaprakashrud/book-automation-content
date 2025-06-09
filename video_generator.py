@@ -1,8 +1,7 @@
 import os
 import json
-from moviepy.video.VideoClip import TextClip
+from moviepy.video.VideoClip import ColorClip, TextClip, CompositeVideoClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
-from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 
 SUMMARY_FILE = "data/summaries.json"
 VOICE_DIR = "voices"
@@ -30,22 +29,38 @@ def generate_videos():
         print(f"[INFO] Creating video for: {title}")
 
         try:
-            # Audio Clip
-            audio = AudioFileClip(audio_path)
+            print(f"[INFO] Creating video for: {title}")
+            audio = AudioFileClip(voice_path)
             duration = audio.duration
 
-            # Background Color Clip
-            background = ColorClip(size=(1080, 1920), color=(10, 10, 10), duration=duration)
+            # Background
+            bg = ColorClip(size=(1080, 1920), color=(240, 240, 240), duration=duration)
 
-            # Text Overlay
-            text = TextClip(summary[:300] + "...", fontsize=48, color='white', size=(1000, None), method='caption')
-            text = text.set_position('center').set_duration(duration)
+            # Title Text
+            title_clip = TextClip(
+                title,
+                fontsize=70,
+                color='black',
+                size=(1000, None),
+                method='caption',
+                align='center',
+            ).set_position(("center", 100)).set_duration(duration)
 
-            # Combine
-            final = CompositeVideoClip([background, text.set_audio(audio)])
+            # Summary Text (below title)
+            summary_clip = TextClip(
+                text,
+                fontsize=40,
+                color='black',
+                size=(900, None),
+                method='caption',
+                align='center',
+            ).set_position(("center", 300)).set_duration(duration)
 
-            output_path = os.path.join(VIDEO_DIR, f"summary_{i+1}.mp4")
-            final.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
+            video = CompositeVideoClip([bg, title_clip, summary_clip])
+            video = video.set_audio(audio)
+
+            output_path = os.path.join(output_dir, f"{title}.mp4")
+            video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
 
         except Exception as e:
             print(f"[ERROR] Failed to create video for '{title}': {e}")
@@ -54,3 +69,5 @@ def generate_videos():
 
 if __name__ == "__main__":
     generate_videos()
+
+
