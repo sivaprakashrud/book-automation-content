@@ -22,12 +22,12 @@ def generate_videos():
     for i, item in enumerate(summaries):
         title = item.get("title", f"Book {i+1}")
         summary = item.get("summary", "")
-        audio_path = os.path.join(VOICE_DIR, f"summary_{i+1}.mp3")
-
-        if not os.path.exists(audio_path):
-            print(f"[WARNING] Voice file for '{title}' not found. Skipping.")
+        # Define the voice file path
+        voice_path = os.path.join(voice_dir, f"{title}.mp3")
+        # Check if voice file exists
+        if not os.path.exists(voice_path):
+            print(f"[WARN] Voice file missing for: {title}")
             continue
-
         print(f"[INFO] Creating video for: {title}")
 
         try:
