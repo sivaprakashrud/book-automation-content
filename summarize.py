@@ -2,53 +2,39 @@ import os
 import json
 import cohere
 
-# -------- SETTINGS --------
-DATA_DIR = "data"
-BOOK_PATH = os.path.join(DATA_DIR, "books.json")
-SUMMARY_PATH = os.path.join(DATA_DIR, "summaries.json")
-COHERE_API_KEY = os.getenv("COHERE_API_KEY")  # You must set this in your GitHub Secrets or local env
+API_KEY = "your_cohere_api_key"  # Replace with your key
+BOOK_PATH = "data/books.json"
+SUMMARY_PATH = "data/summaries.json"
 
-# -------- HELPER FUNCTIONS --------
-def load_books():
+def generate_summaries():
     if not os.path.exists(BOOK_PATH):
-        raise FileNotFoundError(f"{BOOK_PATH} does not exist.")
+        print(f"[ERROR] Book file not found at: {BOOK_PATH}")
+        return
+
     with open(BOOK_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
+        books = json.load(f)
 
-def summarize_with_cohere(text):
-    try:
-        co = cohere.Client(COHERE_API_KEY)
-        response = co.summarize(
-            text=text,
-            length="short",     # Ideal for Reels
-            format="paragraph",
-            model="command-light"
-        )
-        return response.summary
-    except Exception as e:
-        print(f"[ERROR] Cohere summarization failed: {e}")
-        return "Summary could not be generated."
-
-def generate_summaries(book_list):
+    co = cohere.Client(API_KEY)
     summaries = []
-    for idx, book in enumerate(book_list):
-        print(f"[INFO] Summarizing book {idx+1}: {book['title']}")
-        summary = summarize_with_cohere(book.get("content", ""))
-        summaries.append({
-            "title": book["title"],
-            "author": book.get("author", ""),
-            "summary": summary
-        })
-    return summaries
 
-def save_summaries(summaries):
-    os.makedirs(DATA_DIR, exist_ok=True)
+    for book in books:
+        text = book.get("description") or book.get("text") or ""
+        if not text:
+            print(f"[WARN] No content to summarize for: {book.get('title', 'Unknown')}")
+            continue
+
+        try:
+            response = co.summarize(text=text, length='short', format='paragraph')
+            summary_text = response.summary
+            summaries.append({
+                "title": book.get("title", "Untitled"),
+                "summary": summary_text
+            })
+            print(f"[INFO] Summary generated for: {book.get('title')}")
+        except Exception as e:
+            print(f"[ERROR] Summarization failed for {book.get('title', 'Unknown')}: {e}")
+
+    os.makedirs("data", exist_ok=True)
     with open(SUMMARY_PATH, "w", encoding="utf-8") as f:
         json.dump(summaries, f, indent=4, ensure_ascii=False)
     print(f"[INFO] Saved {len(summaries)} summaries to {SUMMARY_PATH}")
-
-# -------- MAIN --------
-if __name__ == "__main__":
-    books = load_books()
-    summaries = generate_summaries(books)
-    save_summaries(summaries)
