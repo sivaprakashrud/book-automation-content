@@ -9,7 +9,7 @@ SUMMARY_FILE = "data/summaries.json"
 VOICE_DIR = "voices"
 VIDEO_DIR = "videos"
 
-def generate_videos():
+def generate_videos(summaries, voice_dir="voices", output_dir="videos"):
     if not os.path.exists(SUMMARY_FILE):
         print("[ERROR] Summary file not found. Please run summarize.py first.")
         return
