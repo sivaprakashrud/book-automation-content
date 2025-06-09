@@ -5,21 +5,6 @@ import requests
 DATA_DIR = "data"
 BOOK_PATH = os.path.join(DATA_DIR, "books.json")
 
-def (query="productivity"):
-    
-    try:
-        response = requests.get(url, timeout=10)
-        if response.status_code != 200:
-            print("[ERROR] Failed to fetch from OpenLibrary")
-            return []
-        data = response.json()
-        books = []
-        for doc in data.get("docs", [])[:5]:  # Limit to 5 books
-            books.append({
-                "title": doc.get("title"),
-                "author": ", ".join(doc.get("author_name", [])),
-                "content": f"Summary placeholder for '{doc.get('title')}' by {doc.get('author_name', [''])[0]}"
-            })
 def fetch_from_openlibrary(query="productivity", max_results=10):
     print("[INFO] Fetching from Google Books...")
     books = []
