@@ -11,10 +11,10 @@ def main():
     summaries = summarize_books(books)
 
     print("[STEP 3] Generating voice files...")
-    generate_voices(summaries)
+    generate_voices("data/summaries.json")
 
     print("[STEP 4] Generating videos...")
-    generate_videos(summaries)
+    generate_videos("data/summaries.json")
 
 if __name__ == "__main__":
     main()
