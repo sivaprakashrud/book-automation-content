@@ -6,7 +6,7 @@ BOOK_PATH = "data/books.json"
 SUMMARY_PATH = "data/summaries.json"
 COHERE_API_KEY = os.getenv("COHERE_API_KEY", "your_actual_cohere_api_key")  # Replace with valid key or set env var
 
-def summarize_books():
+def summarize_books(books):
     if not os.path.exists(BOOK_PATH):
         print(f"[ERROR] Book file not found at: {BOOK_PATH}")
         return []
