@@ -56,8 +56,8 @@ def generate_videos(summaries, voice_dir="voices", output_dir="videos"):
             output_path = os.path.join(output_dir, f"{title}.mp4")
             video.write_videofile(output_path, fps=24, codec='libx264', audio_codec='aac')
 
-        except Exception as e:
-            print(f"[ERROR] Failed to create video for '{title}': {e}")
+            except Exception as e:
+                print(f"[ERROR] Failed to create video for '{title}': {e}")
 
     print(f"[INFO] All videos saved to {VIDEO_DIR}/")
 
