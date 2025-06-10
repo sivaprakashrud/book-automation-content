@@ -8,7 +8,7 @@ def main():
     books = fetch_books()
 
     print("[STEP 2] Generating summaries...")
-    summaries = summarize_books()
+    summaries = summarize_books(books)
 
     print("[STEP 3] Generating voice files...")
     generate_voices(summaries)
