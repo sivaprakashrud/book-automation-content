@@ -6,7 +6,7 @@ API_KEY = "your_cohere_api_key"  # Replace with your key
 BOOK_PATH = "data/books.json"
 SUMMARY_PATH = "data/summaries.json"
 
-def generate_summaries():
+def summarize_books():
     if not os.path.exists(BOOK_PATH):
         print(f"[ERROR] Book file not found at: {BOOK_PATH}")
         return
