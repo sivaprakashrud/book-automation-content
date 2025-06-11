@@ -5,13 +5,6 @@ from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
 import re
 
-def sanitize_filename(title):
-    return re.sub(r'[\\/*?:"<>|()\']', "", title.replace(" ", "_"))
-
-if not os.path.exists(voice_path):
-    print(f"[WARN] Voice file missing for: {title}")
-    continue
-
 SUMMARY_FILE = "data/summaries.json"
 VOICE_DIR = "voices"
 VIDEO_DIR = "videos"
