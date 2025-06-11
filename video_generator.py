@@ -7,13 +7,10 @@ import re
 
 def sanitize_filename(title):
     return re.sub(r'[\\/*?:"<>|()\']', "", title.replace(" ", "_"))
-filename = f"{sanitize_filename(title)}.mp3"
-voice_path = os.path.join("voices", filename)
 
 if not os.path.exists(voice_path):
     print(f"[WARN] Voice file missing for: {title}")
     continue
-
 
 SUMMARY_FILE = "data/summaries.json"
 VOICE_DIR = "voices"
