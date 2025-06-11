@@ -1,9 +1,10 @@
+requests
 transformers==4.36.2
 torch
 gTTS
 moviepy
-requests
 beautifulsoup4
 selenium
 cohere
 re
+
