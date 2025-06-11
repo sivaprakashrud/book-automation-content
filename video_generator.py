@@ -1,9 +1,9 @@
 import os
 import json
+import re
 from moviepy.video.VideoClip import ColorClip, TextClip
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
-import re
 
 SUMMARY_FILE = "data/summaries.json"
 VOICE_DIR = "voices"
@@ -13,12 +13,12 @@ def sanitize_filename(title):
     """Sanitize title to create a safe filename."""
     return re.sub(r'[\\/*?:"<>|()\']', "", title.replace(" ", "_"))
 
-def generate_videos(summaries, voice_dir="voices", output_dir="videos"):
+def generate_videos(voice_dir=VOICE_DIR, output_dir=VIDEO_DIR):
     if not os.path.exists(SUMMARY_FILE):
         print("[ERROR] Summary file not found. Please run summarize.py first.")
         return
 
-    os.makedirs(VIDEO_DIR, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
 
     with open(SUMMARY_FILE, "r", encoding="utf-8") as f:
         summaries = json.load(f)
@@ -27,14 +27,14 @@ def generate_videos(summaries, voice_dir="voices", output_dir="videos"):
         title = item["title"]
         summary = item["summary"]
         print(f"[INFO] Creating video for: {title}")
-        
+
         safe_title = sanitize_filename(title)
         voice_path = os.path.join(voice_dir, f"{safe_title}.mp3")
-        
+
         if not os.path.exists(voice_path):
             print(f"[WARN] Voice file missing for: {title}")
             continue
-        
+
         try:
             # Audio
             audioclip = AudioFileClip(voice_path)
@@ -51,13 +51,13 @@ def generate_videos(summaries, voice_dir="voices", output_dir="videos"):
             video = CompositeVideoClip([background, txt_clip]).set_audio(audioclip)
 
             # Save to output
-            output_path = os.path.join(output_dir, f"{title}.mp4")
+            output_path = os.path.join(output_dir, f"{safe_title}.mp4")
             video.write_videofile(output_path, fps=24, codec='libx264', audio_codec='aac')
 
         except Exception as e:
             print(f"[ERROR] Failed to create video for '{title}': {e}")
 
-    print(f"[INFO] All videos saved to {VIDEO_DIR}/")
+    print(f"[INFO] All videos saved to {output_dir}/")
 
 if __name__ == "__main__":
     generate_videos()
