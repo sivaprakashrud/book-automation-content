@@ -6,5 +6,3 @@ moviepy
 beautifulsoup4
 selenium
 cohere
-re
-
