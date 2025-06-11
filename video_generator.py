@@ -16,6 +16,10 @@ SUMMARY_FILE = "data/summaries.json"
 VOICE_DIR = "voices"
 VIDEO_DIR = "videos"
 
+def sanitize_filename(title):
+    """Sanitize title to create a safe filename."""
+    return re.sub(r'[\\/*?:"<>|()\']', "", title.replace(" ", "_"))
+
 def generate_videos(summaries, voice_dir="voices", output_dir="videos"):
     if not os.path.exists(SUMMARY_FILE):
         print("[ERROR] Summary file not found. Please run summarize.py first.")
@@ -30,7 +34,12 @@ def generate_videos(summaries, voice_dir="voices", output_dir="videos"):
         title = item["title"]
         summary = item["summary"]
         print(f"[INFO] Creating video for: {title}")
-
+        
+        safe_title = sanitize_filename(title)
+        voice_path = os.path.join(voice_dir, f"{safe_title}.mp3")
+        if not os.path.exists(voice_path):
+            print(f"[WARN] Voice file missing for: {title}")
+            continue
         try:
             voice_path = os.path.join(voice_dir, f"{title}.mp3")
 
