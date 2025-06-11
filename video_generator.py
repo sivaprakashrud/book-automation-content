@@ -30,16 +30,12 @@ def generate_videos(summaries, voice_dir="voices", output_dir="videos"):
         
         safe_title = sanitize_filename(title)
         voice_path = os.path.join(voice_dir, f"{safe_title}.mp3")
+        
         if not os.path.exists(voice_path):
             print(f"[WARN] Voice file missing for: {title}")
             continue
+        
         try:
-            voice_path = os.path.join(voice_dir, f"{title}.mp3")
-
-            if not os.path.exists(voice_path):
-                print(f"[WARN] Voice file missing for: {title}")
-                continue
-
             # Audio
             audioclip = AudioFileClip(voice_path)
             duration = audioclip.duration
