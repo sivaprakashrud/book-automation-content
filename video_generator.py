@@ -44,9 +44,8 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
             background = ColorClip(size=(1080, 1920), color=(30, 30, 30), duration=duration)
 
             # Text overlay
-            txt_clip = TextClip(txt=summary, font="Arial", color='white', size=(1000, 1700), method='caption')
+            txt_clip = TextClip(summary, font="Arial", color='white', size=(1000, 1700), method='caption')
             txt_clip = txt_clip.set_duration(duration).set_position("center")
-
 
             # Final video
             video = CompositeVideoClip([background, txt_clip]).set_audio(audioclip)
