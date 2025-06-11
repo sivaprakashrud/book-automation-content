@@ -10,7 +10,7 @@ def sanitize_filename(title):
 
 if not os.path.exists(voice_path):
     print(f"[WARN] Voice file missing for: {title}")
-    continue
+        continue
 
 SUMMARY_FILE = "data/summaries.json"
 VOICE_DIR = "voices"
