@@ -47,7 +47,7 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
             background = ColorClip(size=(1080, 1920), color=(30, 30, 30), duration=duration)
 
             try:
-                txt_clip = TextClip(txt=wrapped_summary,
+                txt_clip = TextClip(txt=wrapped_text,
                                     method='caption',
                                     size=(1000, 1600),
                                     color='white',
@@ -56,7 +56,7 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
             except Exception as font_error:
                 print(f"[WARN] Font error: {font_error} — falling back to default font.")
                 try:
-                    txt_clip = TextClip(txt=wrapped_summary,
+                    txt_clip = TextClip(txt=wrapped_text,
                                         method='caption',
                                         size=(1000, 1600),
                                         color='white',
