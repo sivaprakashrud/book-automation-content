@@ -48,12 +48,14 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
 
             # Text overlay
             txt_clip = TextClip(
-                wrapped_summary,
-                font="DejaVu-Sans",  # Safe default font
+                wrapped_text,
+                method='caption',            # This supports wrapping & fontsize
                 fontsize=40,
-                color="white",
-                method="label"
+                color='white',
+                size=(1000, 1600),           # Fit within 1080x1920 with margins
+                font='DejaVu-Sans'           # Replace with 'Arial' or a system-safe font if needed
             ).set_duration(duration).set_position("center")
+
 
 
 
