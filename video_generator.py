@@ -69,7 +69,7 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
                                     size=(800, 100),  
                                     color='white',
                                     font='DejaVu-Sans',
-                                    fontsize=40).set_duration(duration)
+                                    font_size=40).set_duration(duration)
 
                 # Animate text movement from left to right
                 txt_clip = txt_clip.set_position(lambda t: (50*t, 500))
