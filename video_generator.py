@@ -46,13 +46,11 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
             # Video background
             background = ColorClip(size=(1080, 1920), color=(30, 30, 30), duration=duration)
 
-            # Text overlay
-            txt_clip = TextClip(
-                wrapped_text,
-                method='caption',            # This supports wrapping & fontsize
-                color='white',
-                size=(1000, 1600),           # Fit within 1080x1920 with margins
-            ).set_duration(duration).set_position("center")
+            try:
+                txt_clip = TextClip(wrapped_text, method='caption', size=(1000, 1600), color='white', font='DejaVu-Sans')
+            except Exception as font_error:
+                print(f"[WARN] Font error: {font_error} — falling back to default font.")
+                txt_clip = TextClip(wrapped_text, method='caption', size=(1000, 1600), color='white')
 
             # Final video
             video = CompositeVideoClip([background, txt_clip]).set_audio(audioclip)
