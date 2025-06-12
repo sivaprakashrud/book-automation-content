@@ -62,22 +62,22 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
                 print(f"[ERROR] Failed to create background clip: {bg_error}")
                 continue
 
-            # Create moving text overlay
+            # Create moving text overlay (Fixed the 'txt' argument issue)
             try:
-                txt_clip = TextClip(txt=wrapped_text,
+                txt_clip = TextClip(wrapped_text,  # Corrected: Removed 'txt='
                                     method='caption',
-                                    size=(800, 100),  # Adjusted to a banner-style text area
+                                    size=(800, 100),  
                                     color='white',
                                     font='DejaVu-Sans',
                                     fontsize=40).set_duration(duration)
 
-                # Animate text to move from left to right across the screen
+                # Animate text movement from left to right
                 txt_clip = txt_clip.set_position(lambda t: (50*t, 500))
 
             except Exception as font_error:
                 print(f"[WARN] Font error: {font_error} — falling back to default font.")
                 try:
-                    txt_clip = TextClip(txt=wrapped_text,
+                    txt_clip = TextClip(wrapped_text,  # Corrected: Removed 'txt='
                                         method='caption',
                                         size=(800, 100),
                                         color='white',
