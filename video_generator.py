@@ -47,11 +47,24 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
             background = ColorClip(size=(1080, 1920), color=(30, 30, 30), duration=duration)
 
             try:
-                txt_clip = TextClip(wrapped_text, method='caption', size=(1000, 1600), color='white', font='DejaVu-Sans')
+                txt_clip = TextClip(txt=wrapped_summary,
+                                    method='caption',
+                                    size=(1000, 1600),
+                                    color='white',
+                                    font='DejaVu-Sans',
+                                    fontsize=40)
             except Exception as font_error:
                 print(f"[WARN] Font error: {font_error} — falling back to default font.")
-                txt_clip = TextClip(wrapped_text, method='caption', size=(1000, 1600), color='white')
-
+                try:
+                    txt_clip = TextClip(txt=wrapped_summary,
+                                        method='caption',
+                                        size=(1000, 1600),
+                                        color='white',
+                                        fontsize=40)
+                except Exception as fallback_error:
+                    print(f"[ERROR] Final fallback failed: {fallback_error}")
+                    continue
+                    
             # Final video
             video = CompositeVideoClip([background, txt_clip]).set_audio(audioclip)
 
