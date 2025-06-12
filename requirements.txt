@@ -2,7 +2,7 @@ requests
 transformers==4.36.2
 torch
 gTTS
-moviepy
+manim
 beautifulsoup4
 selenium
 cohere
