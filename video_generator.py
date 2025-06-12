@@ -46,8 +46,7 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
             # Text overlay
             txt_clip = TextClip(
                 summary,
-                fontsize=40,
-                font="DejaVu-Sans",
+                fontsize=(40,"DejaVu-Sans"),
                 color='white',
                 size=(1000, 1700),
                 method='caption'
