@@ -41,6 +41,8 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
             audioclip = AudioFileClip(voice_path)
             duration = audioclip.duration
 
+            wrapped_summary = "\n".join(textwrap.wrap(summary, width=60))
+            
             # Video background
             background = ColorClip(size=(1080, 1920), color=(30, 30, 30), duration=duration)
 
