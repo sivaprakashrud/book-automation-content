@@ -44,14 +44,19 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
             background = ColorClip(size=(1080, 1920), color=(30, 30, 30), duration=duration)
 
             # Text overlay
-            txt_clip = TextClip(
-                summary,
-                method='caption',
-                size=(1000, 1700),
-                fontsize=40,
-                font="DejaVu-Sans",
-                color='white'
-            ).set_duration(duration).set_position("center")
+            try:
+                txt_clip = TextClip(
+                    text=summary,
+                    method='caption',
+                    size=(1000, 1700),
+                    font="DejaVu-Sans",
+                    fontsize=40,
+                    color='white'
+                ).set_duration(duration).set_position("center")
+            except Exception as e:
+                print(f"[ERROR] TextClip failed for '{title}': {e}")
+                continue
+
 
             # Final video
             video = CompositeVideoClip([background, txt_clip]).set_audio(audioclip)
