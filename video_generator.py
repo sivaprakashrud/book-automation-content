@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import textwrap
 from moviepy.video.VideoClip import ColorClip, TextClip
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
@@ -44,18 +45,15 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
             background = ColorClip(size=(1080, 1920), color=(30, 30, 30), duration=duration)
 
             # Text overlay
-            try:
-                txt_clip = TextClip(
-                    text=summary,
-                    method='caption',
-                    size=(1000, 1700),
-                    font="DejaVu-Sans",
-                    fontsize=40,
-                    color='white'
-                ).set_duration(duration).set_position("center")
-            except Exception as e:
-                print(f"[ERROR] TextClip failed for '{title}': {e}")
-                continue
+            wrapped_text = "\n".join(textwrap.wrap(summary, width=60))
+            txt_clip = TextClip(
+                text=wrapped_text,
+                font="DejaVu-Sans",
+                fontsize=40,
+                color='white',
+                method='label'
+            ).set_duration(duration).set_position("center")
+
 
 
             # Final video
