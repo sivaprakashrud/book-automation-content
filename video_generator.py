@@ -2,32 +2,9 @@ import os
 import json
 import re
 import textwrap
-import moviepy  # Ensures latest MoviePy is used
 from moviepy.video.VideoClip import ColorClip, TextClip
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
-
-# Ensure the latest version of MoviePy
-try:
-    from pip import main as pip_main
-except ImportError:
-    from pip._internal import main as pip_main
-
-def check_and_update_moviepy():
-    """Ensure MoviePy is up-to-date"""
-    import subprocess
-    try:
-        installed_version = moviepy.__version__
-        latest_version = subprocess.check_output(["pip", "search", "moviepy"]).decode()
-        if installed_version not in latest_version:
-            print("[INFO] Updating MoviePy...")
-            subprocess.call(["pip", "install", "--upgrade", "moviepy"])
-            print("[INFO] MoviePy updated successfully!")
-    except Exception as update_error:
-        print(f"[WARN] Could not verify MoviePy update: {update_error}")
-
-# Run update check before execution
-check_and_update_moviepy()
 
 # Directories
 SUMMARY_FILE = "data/summaries.json"
@@ -86,13 +63,14 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
                 print(f"[ERROR] Failed to create background clip: {bg_error}")
                 continue
 
-            # Create moving text overlay (Fixed the 'font' issue and updated arguments)
+            # Create moving text overlay (Fixed font issue)
             try:
                 txt_clip = TextClip(wrapped_text,  
                                     method='caption',
                                     size=(800, 100),  
                                     color='white',
-                                    font_size=40).set_duration(duration)  # Corrected font argument
+                                    font="Arial",  # Explicitly setting a valid font
+                                    font_size=40).set_duration(duration)
 
                 # Animate text movement from left to right
                 txt_clip = txt_clip.set_position(lambda t: (50*t, 500))
@@ -104,6 +82,7 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
                                         method='caption',
                                         size=(800, 100),
                                         color='white',
+                                        font="DejaVu-Sans",  # Fallback font
                                         font_size=40).set_duration(duration)
                     txt_clip = txt_clip.set_position(lambda t: (50*t, 500))  # Apply movement
                 except Exception as fallback_error:
