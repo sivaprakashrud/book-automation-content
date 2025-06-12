@@ -1,6 +1,15 @@
-import requests
 import os
-import json  
+import subprocess
+import json
+import requests
+
+# Ensure `requests` is installed before proceeding
+try:
+    import requests
+except ModuleNotFoundError:
+    print("[WARN] `requests` module not found. Installing now...")
+    subprocess.run(["pip", "install", "requests"], check=True)
+    import requests  # ✅ Retry import after installation
 
 DATA_DIR = "data"
 BOOK_PATH = os.path.join(DATA_DIR, "books.json")
