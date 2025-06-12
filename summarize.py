@@ -2,11 +2,15 @@ import os
 import json
 import cohere
 
+# File Paths
 BOOK_PATH = "data/books.json"
 SUMMARY_PATH = "data/summaries.json"
-COHERE_API_KEY = os.getenv("COHERE_API_KEY", "your_actual_cohere_api_key")  # Replace with valid key or set env var
 
-def summarize_books(books):
+# ✅ Cohere API Key (Replace with actual key or set env var)
+COHERE_API_KEY = os.getenv("COHERE_API_KEY", "your_actual_cohere_api_key")
+
+def summarize_books():
+    """Summarize book descriptions using Cohere API."""
     if not os.path.exists(BOOK_PATH):
         print(f"[ERROR] Book file not found at: {BOOK_PATH}")
         return []
@@ -18,25 +22,31 @@ def summarize_books(books):
     summaries = []
 
     for book in books:
+        title = book.get("title", "Untitled")
         text = book.get("description") or book.get("text") or ""
+
         if not text:
-            print(f"[WARN] No content to summarize for: {book.get('title', 'Unknown')}")
+            print(f"[WARN] No content to summarize for: {title}")
             continue
 
         try:
-            response = co.summarize(text=text, length='short', format='paragraph')
-            summary_text = response.summary
+            response = co.summarize(text=text, length="short", format="paragraph")
+            summary_text = response.summary if response.summary else "No summary available."
+
             summaries.append({
-                "title": book.get("title", "Untitled"),
+                "title": title,
                 "summary": summary_text
             })
-            print(f"[INFO] Summary generated for: {book.get('title')}")
+            print(f"[INFO] Summary generated for: {title}")
         except Exception as e:
-            print(f"[ERROR] Summarization failed for {book.get('title', 'Unknown')}: {e}")
+            print(f"[ERROR] Summarization failed for {title}: {e}")
 
     os.makedirs("data", exist_ok=True)
     with open(SUMMARY_PATH, "w", encoding="utf-8") as f:
         json.dump(summaries, f, indent=4, ensure_ascii=False)
-    print(f"[INFO] Saved {len(summaries)} summaries to {SUMMARY_PATH}")
     
+    print(f"[INFO] Saved {len(summaries)} summaries to {SUMMARY_PATH}")
     return summaries
+
+if __name__ == "__main__":
+    summarize_books()
