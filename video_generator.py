@@ -45,13 +45,12 @@ def generate_videos(summary_file=SUMMARY_FILE, voice_dir=VOICE_DIR, output_dir=V
             background = ColorClip(size=(1080, 1920), color=(30, 30, 30), duration=duration)
 
             # Text overlay
-            wrapped_text = "\n".join(textwrap.wrap(summary, width=60))
             txt_clip = TextClip(
-                text=wrapped_text,
-                font="DejaVu-Sans",
+                wrapped_summary,
+                font="DejaVu-Sans",  # Safe default font
                 fontsize=40,
-                color='white',
-                method='label'
+                color="white",
+                method="label"
             ).set_duration(duration).set_position("center")
 
 
