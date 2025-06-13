@@ -1,11 +1,11 @@
 requests
+cohere  # For AI-based text summarization
 transformers>=4.36.2  # For NLP-based tasks
 torch  # Required for Transformers and ML-based processing
 gTTS  # For generating voice from text
 manim  # For high-quality animations and video rendering
 beautifulsoup4  # For web scraping (LibraryThing support)
 selenium  # For automated browser interactions (if needed for LibraryThing)
-cohere  # For AI-based text summarization
 moviepy  # For video generation and editing
 jsonschema  # For better JSON validation and handling
 unidecode  # Ensures filenames remain safe across different formats
