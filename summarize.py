@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import cohere
-from cohere import CohereError  # ✅ Correct base exception class        
+import cohere.errors  # ✅ Import the correct error module
 
 # Ensure API key is set
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
@@ -39,6 +39,7 @@ def split_text_into_parts(text, num_parts=5, min_length=250):
     return merged_parts
 
 def summarize_text(text):
+    """Summarizes a given text using Cohere API."""
     try:
         response = co.summarize(
             text=text,
@@ -48,7 +49,7 @@ def summarize_text(text):
             extractiveness="high"
         )
         return response.summary
-    except CohereError as e:  # ✅ Catch all Cohere API errors
+    except cohere.errors.APIError as e:  # ✅ Use the correct exception
         print(f"[ERROR] Cohere API error: {e}")
         return None
       
