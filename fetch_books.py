@@ -74,7 +74,6 @@ def fetch_books():
     all_books = []
     all_books.extend(fetch_from_openlibrary())
     all_books.extend(fetch_from_gutenberg())
-    all_books.extend(fetch_from_librarything())
     save_books_to_file(all_books)
 
 if __name__ == "__main__":
