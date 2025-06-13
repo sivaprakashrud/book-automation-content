@@ -14,7 +14,7 @@ except ModuleNotFoundError:
 DATA_DIR = "data"
 BOOK_PATH = os.path.join(DATA_DIR, "books.json")
 
-def fetch_from_openlibrary(query="productivity", max_results=10):
+def fetch_from_openlibrary(query="productivity", max_results=5):
     """Fetch books from OpenLibrary API (Free, No API Key)."""
     print("[INFO] Fetching from OpenLibrary...")
     books = []
@@ -44,7 +44,7 @@ def fetch_from_gutenberg():
     try:
         response = requests.get(url)
         response.raise_for_status()
-        data = response.text.split("\n")[:10]  # Simulated parsing (Gutenberg doesn't have JSON API)
+        data = response.text.split("\n")[:5]  # Simulated parsing (Gutenberg doesn't have JSON API)
         for line in data:
             books.append({
                 "title": line.strip(),
@@ -56,28 +56,6 @@ def fetch_from_gutenberg():
         return books
     except requests.exceptions.RequestException as e:
         print(f"[ERROR] Project Gutenberg error: {e}")
-        return []
-
-def fetch_from_librarything():
-    """Fetch books from LibraryThing (Free, No API Key)."""
-    print("[INFO] Fetching from LibraryThing...")
-    books = []
-    url = "https://www.librarything.com/rss/recommendations.xml"  # Public RSS feed
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.text.split("<title>")[2:12]  # Simulated parsing
-        for line in data:
-            books.append({
-                "title": line.split("</title>")[0].strip(),
-                "authors": ["Unknown"],
-                "description": "Recommended book from LibraryThing.",
-                "text": "Recommended book from LibraryThing.",
-                "source": "LibraryThing"
-            })
-        return books
-    except requests.exceptions.RequestException as e:
-        print(f"[ERROR] LibraryThing error: {e}")
         return []
 
 def save_books_to_file(book_list):
