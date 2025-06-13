@@ -1,77 +1,114 @@
-from manim import *
-import json, os, re, textwrap
+# video_generator.py
+# ────────────────────────────────────────────────────────────────
+"""
+Generate one Manim video for every summary chunk produced by
+summarize.py.  Output MP4s will land in  videos/<Book>_part#.mp4
+"""
 
-# File Paths
-DATA_DIR = "data"
+import os, json, re, sys, subprocess, importlib.util
+
+# ────────────────────────────────────────────────────────────────
+# 0.  Ensure MANIM is installed in the *current interpreter*
+# ────────────────────────────────────────────────────────────────
+def ensure_manim():
+    if importlib.util.find_spec("manim") is not None:
+        return
+    print("[WARN] 'manim' not found. Installing Manim Community Edition…")
+    # ‘--quiet’ keeps CI logs clean; remove for verbose output.
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "--quiet", "manim==0.18.*"]
+    )
+ensure_manim()
+
+from manim import *  # noqa: E402  (import AFTER we know it’s available)
+
+# ────────────────────────────────────────────────────────────────
+# 1.  Paths & helpers
+# ────────────────────────────────────────────────────────────────
+DATA_DIR     = "data"
 SUMMARY_FILE = os.path.join(DATA_DIR, "summaries.json")
-VIDEO_DIR = "videos"
-BACKGROUND_DIR = "backgrounds"
+VIDEO_DIR    = "videos"
+BACKGROUND_DIR = "backgrounds"            # optional stills
 
-class SummaryVideo(Scene):
-    def __init__(self, title, summary, **kwargs):
+os.makedirs(VIDEO_DIR, exist_ok=True)
+
+def safe_name(txt: str) -> str:
+    """filename-safe slug."""
+    return re.sub(r'[\\/*?:"<>|()\']', "", txt.replace(" ", "_"))
+
+
+# ────────────────────────────────────────────────────────────────
+# 2.  Scene template
+# ────────────────────────────────────────────────────────────────
+class SummaryScene(Scene):
+    def __init__(self, title, body, bg_path=None, **kwargs):
         super().__init__(**kwargs)
-        self.title = title
-        self.summary = summary
+        self.title_text = title
+        self.body_text  = body
+        self.bg_path    = bg_path
 
     def construct(self):
-        """Generate an animated video for a single summary."""
-        print(f"[INFO] Creating video for: {self.title}")
+        # optional background
+        if self.bg_path and os.path.exists(self.bg_path):
+            bg = ImageMobject(self.bg_path).scale_to_fit_height(config.frame_height)
+            self.add(bg)
 
-        # Format text
-        wrapped_text = "\n".join(textwrap.wrap(self.summary, width=60))
+        # Title
+        title = Text(self.title_text, font_size=60, color=WHITE).to_edge(UP)
 
-        # Load background image or video
-        bg_path = os.path.join(BACKGROUND_DIR, f"{sanitize_filename(self.title)}.png")
-        if os.path.exists(bg_path):
-            background = ImageMobject(bg_path).scale(1.5)
-        else:
-            background = Rectangle(width=16, height=9, color=BLACK)
+        # Body (wrap ~60 characters/line)
+        wrapped = "\n".join(self.body_text.splitlines())
+        body = Text(wrapped, font_size=36, color=WHITE)
+        body.next_to(title, DOWN).align_on_border(LEFT)
 
-        # Create title
-        title_text = Text(self.title, font_size=60, color=WHITE).to_edge(UP)
-        
-        # Create summary text with animation
-        summary_text = Text(wrapped_text, font_size=40, color=WHITE)
-        summary_text.shift(DOWN)
+        # animations
+        self.play(FadeIn(title), run_time=1)
+        self.play(Write(body), run_time=4)
+        self.wait(1)
+        self.play(FadeOut(title), FadeOut(body), run_time=0.8)
 
-        # Animate the text with fade-in and movement
-        self.play(FadeIn(background), run_time=1)
-        self.play(Write(title_text), run_time=2)
-        self.play(summary_text.animate.shift(RIGHT * 2), run_time=5)
-        
-        # Add fade-out effect
-        self.play(FadeOut(title_text), FadeOut(summary_text), FadeOut(background))
 
-        print(f"[INFO] Video for '{self.title}' generated successfully!")
-
-def sanitize_filename(title):
-    """Remove invalid characters for file names."""
-    return re.sub(r'[\\/*?:"<>|()\']', "", title.replace(" ", "_"))
-
-def generate_videos():
-    """Generate separate videos for each summary."""
+# ────────────────────────────────────────────────────────────────
+# 3.  Driver – iterate JSON → render scenes
+# ────────────────────────────────────────────────────────────────
+def main():
     if not os.path.exists(SUMMARY_FILE):
-        print("[ERROR] Summary file missing.")
+        print("[ERROR] Run summarize.py first – no summaries.json found.")
         return
-    
-    with open(SUMMARY_FILE, "r", encoding="utf-8") as f:
-        summaries = json.load(f)
 
-    os.makedirs(VIDEO_DIR, exist_ok=True)
+    with open(SUMMARY_FILE, encoding="utf-8") as f:
+        books = json.load(f)
 
-    for item in summaries:
-        title = item.get("title", "Untitled")
-        summary_list = item.get("summaries", [])
+    if not books:
+        print("[WARN] summaries.json is empty – nothing to film.")
+        return
 
-        if not title or not summary_list:
-            print(f"[WARN] Missing title or summary in entry: {item}")
+    for book in books:
+        title  = book.get("title", "Untitled")
+        bullets = book.get("summaries", [])
+        if not bullets:
+            print(f"[WARN] '{title}' has no summaries → skipping.")
             continue
 
-        for i, summary in enumerate(summary_list):
-            video_filename = os.path.join(VIDEO_DIR, f"{sanitize_filename(title)}_part{i+1}.mp4")
-            scene = SummaryVideo(title, summary)
-            scene.render()
-            print(f"[INFO] Saved video: {video_filename}")
+        bg = os.path.join(BACKGROUND_DIR, f"{safe_name(title)}.png")
+        for idx, text in enumerate(bullets, 1):
+            outfile = f"{safe_name(title)}_part{idx}.mp4"
+            out_path = os.path.join(VIDEO_DIR, outfile)
 
+            print(f"[INFO] Rendering → {out_path}")
+            # render with temporary config so files land exactly where we want
+            with tempconfig({
+                "media_dir": VIDEO_DIR,
+                "output_file": outfile.replace(".mp4", ""),
+                "format": "mp4",
+                "quality": "low_quality",  # change to 'medium_quality' for nicer video
+                "disable_caching": True
+            }):
+                scene = SummaryScene(title, text, bg_path=bg)
+                scene.render()
+
+    print("[INFO] All videos generated.")
+
+# ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    generate_videos()
+    main()
