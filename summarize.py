@@ -1,7 +1,16 @@
 import os
 import json
 import cohere
+import subprocess
+import sys
 
+try:
+    import cohere
+except ModuleNotFoundError:
+    print("[WARN] 'cohere' module not found. Installing...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "cohere"], check=True)
+    import cohere  # ✅ Retry import after installation
+    
 # File Paths
 BOOK_PATH = "data/books.json"
 SUMMARY_PATH = "data/summaries.json"
