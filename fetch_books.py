@@ -36,7 +36,9 @@ def fetch_from_openlibrary(niche="productivity", max_results=5):
             book_response.raise_for_status()
             book_data = book_response.json()
 
-            full_text = book_data.get("description", {}).get("value", "No full text available.")
+            # Handle description format (string vs dictionary)
+            full_text_data = book_data.get("description", "No full text available.")
+            full_text = full_text_data.get("value", "No full text available.") if isinstance(full_text_data, dict) else full_text_data
 
             books.append({
                 "title": item.get("title", "Unknown Title"),
