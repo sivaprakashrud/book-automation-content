@@ -14,7 +14,7 @@ except ModuleNotFoundError:
 DATA_DIR = "data"
 BOOK_PATH = os.path.join(DATA_DIR, "books.json")
 
-def fetch_from_openlibrary(query="productivity", max_results=5):
+def fetch_from_openlibrary(query="productivity", max_results=10):
     """Fetch books from OpenLibrary API (Free, No API Key)."""
     print("[INFO] Fetching from OpenLibrary...")
     books = []
@@ -36,7 +36,7 @@ def fetch_from_openlibrary(query="productivity", max_results=5):
         print(f"[ERROR] OpenLibrary error: {e}")
         return []
 
-def fetch_from_gutenberg():
+def fetch_from_gutenberg(query="productivity", max_results=10):
     """Fetch books from Project Gutenberg (Free, No API Key)."""
     print("[INFO] Fetching from Project Gutenberg...")
     books = []
