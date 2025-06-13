@@ -49,10 +49,10 @@ def summarize_text(text):
             extractiveness="high"
         )
         return response.summary
-    except CohereAPIError as e:  # ✅ Use the correct exception
+    except APIError as e:  # ✅ Use the correct exception
         print(f"[ERROR] Cohere API error: {e}")
         return None
-            
+      
 def summarize_books():
     """Reads books.json, splits each book into 5 parts, and summarizes key points."""
     if not os.path.exists(BOOK_PATH):
