@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import cohere
-import cohere
+from cohere.errors import CohereAPIError  # ✅ Correct import
         
 # Ensure API key is set
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
@@ -15,15 +15,29 @@ DATA_DIR = "data"
 BOOK_PATH = os.path.join(DATA_DIR, "books.json")
 SUMMARY_PATH = os.path.join(DATA_DIR, "summaries.json")
 
-def split_text_into_parts(text, num_parts=5):
-    """Splits a book's full text into equal parts for better summarization."""
+def split_text_into_parts(text, num_parts=5, min_length=250):
+    """Splits a book's full text into equal parts while ensuring each part meets the minimum length."""
     text = text.strip()
-    if len(text) < 250:
+    if len(text) < min_length:
         return []  # Skip books with insufficient content
 
-    part_size = len(text) // num_parts
-    return [text[i * part_size : (i + 1) * part_size] for i in range(num_parts)]
+    part_size = max(len(text) // num_parts, min_length)
+    parts = [text[i * part_size : (i + 1) * part_size] for i in range(num_parts)]
 
+    # Merge small parts to ensure each meets the minimum length
+    merged_parts = []
+    buffer = ""
+    for part in parts:
+        buffer += part
+        if len(buffer) >= min_length:
+            merged_parts.append(buffer)
+            buffer = ""
+
+    if buffer:  # Add any remaining text
+        merged_parts.append(buffer)
+
+    return merged_parts
+        
 def summarize_text(text):
     """Summarizes a given text using Cohere API."""
     try:
@@ -35,10 +49,10 @@ def summarize_text(text):
             extractiveness="high"
         )
         return response.summary
-    except cohere.CohereException as e:  # ✅ Use the correct exception
+    except CohereAPIError as e:  # ✅ Use the correct exception
         print(f"[ERROR] Cohere API error: {e}")
         return None
-
+            
 def summarize_books():
     """Reads books.json, splits each book into 5 parts, and summarizes key points."""
     if not os.path.exists(BOOK_PATH):
