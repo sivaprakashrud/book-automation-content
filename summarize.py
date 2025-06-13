@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import cohere
-from cohere.errors import CohereAPIError  # ✅ Correct import
+from cohere.errors import APIError   # ✅ Correct import
         
 # Ensure API key is set
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
