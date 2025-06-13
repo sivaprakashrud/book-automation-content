@@ -1,5 +1,5 @@
 requests
-transformers==4.36.2  # For NLP-based tasks
+transformers>=4.36.2  # For NLP-based tasks
 torch  # Required for Transformers and ML-based processing
 gTTS  # For generating voice from text
 manim  # For high-quality animations and video rendering
