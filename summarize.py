@@ -2,7 +2,9 @@ import os
 import json
 import requests
 import cohere
-
+import cohere
+from cohere.error import CohereAPIError  # ✅ Correct import
+        
 # Ensure API key is set
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 if not COHERE_API_KEY:
@@ -34,7 +36,7 @@ def summarize_text(text):
             extractiveness="high"
         )
         return response.summary
-    except cohere.CohereError as e:
+    except CohereAPIError as e:  # ✅ Use the correct exception
         print(f"[ERROR] Cohere API error: {e}")
         return None
 
