@@ -12,30 +12,38 @@ Requirements:
   - Summaries must be available in data/summaries.json.
   - Optionally, a voiceover file exists in voices/ matching the book title & part.
 """
-import sys
-print("Python executable:", sys.executable)
-
 import os, json, re, sys, subprocess, importlib.util, random
 from manim import *
 
-# ────────────────────────────────────────────────────────────────
-# 0. Ensure Manim is installed (if not, auto-install; see previous instructions)
+# ————————————————
+# 0. Ensure MANIM is installed in the correct Python environment
+# ————————————————
 def ensure_manim():
-    if importlib.util.find_spec("manim") is not None:
-        return
-    print("[WARN] 'manim' not found. Installing Manim Community Edition…")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "manim==0.18.*"])
+    if importlib.util.find_spec("manim") is None:
+        print("[WARN] 'manim' not found. Installing now...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "manim"])
+    
+    # Install required system dependencies for Manim
+    if sys.platform.startswith("linux"):
+        print("[INFO] Installing FFmpeg & Cairo dependencies...")
+        subprocess.run([
+            "sudo", "apt-get", "install", "-y", "libcairo2-dev", "libpango1.0-dev",
+            "libglib2.0-dev", "pkg-config", "ffmpeg"
+        ], check=True)
+    
+    import manim  # Final confirmation of successful install
+
 ensure_manim()
 
 from manim import *
 
-# ────────────────────────────────────────────────────────────────
-# 1. Global paths and helper functions
-# ────────────────────────────────────────────────────────────────
-DATA_DIR      = "data"
-SUMMARY_FILE  = os.path.join(DATA_DIR, "summaries.json")
-VIDEO_DIR     = "videos"
-VOICE_DIR     = "voices"
+# ————————————————
+# 1. Paths and Helper Functions
+# ————————————————
+DATA_DIR = "data"
+SUMMARY_FILE = os.path.join(DATA_DIR, "summaries.json")
+VIDEO_DIR = "videos"
+VOICE_DIR = "voices"
 
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
@@ -43,39 +51,34 @@ def safe_name(txt: str) -> str:
     return re.sub(r'[\\/*?:"<>|()\']', "", txt.replace(" ", "_"))
 
 def get_voice_file(title: str, part:int=1) -> str:
-    """Return the voiceover file path if it exists."""
+    """Return the voiceover file path if available."""
     fp = os.path.join(VOICE_DIR, f"{safe_name(title)}_part{part}.mp3")
     return fp if os.path.exists(fp) else ""
 
-# ────────────────────────────────────────────────────────────────
-# 2. Animated Abstract Background Scene (45 seconds)
-# ────────────────────────────────────────────────────────────────
+# ————————————————
+# 2. Animated Abstract Background (45 sec)
+# ————————————————
 class AbstractBackground(Scene):
-    """
-    An abstract animated background that runs for exactly 45 seconds.
-    In this example, we animate a group of circles that slowly drift and shift color.
-    """
     def construct(self):
-        circles = VGroup(*[Circle(radius=random.uniform(0.7, 1.2),
-                                    color=random.choice([BLUE, GREEN, RED, PURPLE]),
-                                    fill_opacity=0.5)
-                           for _ in range(8)])
-        circles.arrange_in_grid(rows=2, buff=1)
+        # Floating animated circles with shifting colors
+        circles = VGroup(*[Circle(radius=random.uniform(0.7, 1.5),
+                                  color=random.choice([BLUE, GREEN, RED, PURPLE]),
+                                  fill_opacity=0.4)
+                          for _ in range(10)])
+        circles.arrange_in_grid(rows=3, buff=1.2)
         self.add(circles)
-        # Animate over full 45 seconds.
-        self.play(AnimationGroup(*[circle.animate.shift(RIGHT * random.uniform(-2,2) + UP * random.uniform(-2,2))
-                                    for circle in circles], lag_ratio=0.5),
-                  run_time=45, rate_func=there_and_back)
+        
+        # Animate for full 45 seconds
+        self.play(AnimationGroup(*[
+            circle.animate.shift(RIGHT * random.uniform(-2,2) + UP * random.uniform(-2,2))
+            .set_color(random.choice([WHITE, YELLOW, ORANGE, PINK]))
+            for circle in circles
+        ], lag_ratio=0.3), run_time=45, rate_func=there_and_back)
 
-# ────────────────────────────────────────────────────────────────
+# ————————————————
 # 3. Karaoke Subtitle Scene
-# ────────────────────────────────────────────────────────────────
+# ————————————————
 class KaraokeScene(Scene):
-    """
-    This scene combines the abstract background with a karaoke-style subtitle overlay.
-    The complete voiceover transcript is displayed as a single line at the bottom of the screen.
-    As the 45-second video plays (optionally with a voiceover sound), the words are highlighted one-by-one.
-    """
     def __init__(self, title: str, transcript: str, voice_path: str = "", **kwargs):
         super().__init__(**kwargs)
         self.title = title
@@ -83,59 +86,56 @@ class KaraokeScene(Scene):
         self.voice_path = voice_path
 
     def construct(self):
-        # Set overall video duration as 45 seconds.
-        TOTAL_DURATION = 45
-        
-        # Set background color and add abstract background animation (can blend with subtitles).
+        TOTAL_DURATION = 45  # Fixed video duration
+
+        # Add animated abstract background
         self.camera.background_color = DARK_BLUE
-        # Create a simplified abstract background: slowly moving circles.
-        bg_circles = VGroup(*[Circle(radius=random.uniform(0.7, 1.2),
-                                       color=random.choice([BLUE, GREEN, RED, PURPLE]),
-                                       fill_opacity=0.3)
-                              for _ in range(8)])
-        bg_circles.arrange_in_grid(rows=2, buff=1)
+        bg_circles = VGroup(*[Circle(radius=random.uniform(0.7, 1.5),
+                                      color=random.choice([BLUE, GREEN, RED, PURPLE]),
+                                      fill_opacity=0.3)
+                              for _ in range(10)])
+        bg_circles.arrange_in_grid(rows=3, buff=1.2)
         self.add(bg_circles)
-        self.play(AnimationGroup(*[circle.animate.shift(RIGHT*random.uniform(-2,2) + UP*random.uniform(-2,2))
-                                    for circle in bg_circles], lag_ratio=0.5),
-                  run_time=TOTAL_DURATION, rate_func=there_and_back)
-        
-        # Add a static title at the top.
+        self.play(AnimationGroup(*[
+            circle.animate.shift(RIGHT*random.uniform(-2,2) + UP*random.uniform(-2,2))
+            .set_color(random.choice([WHITE, YELLOW, ORANGE, PINK]))
+            for circle in bg_circles
+        ], lag_ratio=0.3), run_time=TOTAL_DURATION, rate_func=there_and_back)
+
+        # Display Title at the Top
         title_text = Text(self.title, font_size=50, color=WHITE).to_edge(UP)
         self.add(title_text)
-        
-        # Create the subtitle line as individual words (Karaoke effect).
+
+        # Create the subtitle (word-by-word karaoke effect)
         words = self.transcript.split()
         word_mobjects = VGroup(*[Text(word, font_size=36, color=WHITE) for word in words])
-        word_mobjects.arrange(RIGHT, buff=0.3)
-        word_mobjects.to_edge(DOWN)
+        word_mobjects.arrange(RIGHT, buff=0.3).to_edge(DOWN)
         self.add(word_mobjects)
-        
-        # If a voiceover file exists, add it as the audio track.
+
+        # Attach voiceover if available
         if self.voice_path:
             try:
                 self.add_sound(self.voice_path)
                 print(f"[INFO] Added voiceover: {self.voice_path}")
             except Exception as e:
-                print(f"[WARN] Voiceover addition failed: {e}")
-        
-        # Calculate timing: each word gets its share of the TOTAL_DURATION.
+                print(f"[WARN] Failed to attach voiceover: {e}")
+
+        # Karaoke-style word highlighting timing
         duration_per_word = TOTAL_DURATION / len(words)
         
-        # Karaoke loop: sequentially highlight each word.
-        # The current word is set to yellow, while the previous word reverts to white.
+        # Highlight words as they are spoken
         for i, word in enumerate(word_mobjects):
-            # Highlight the current word.
             self.play(word.animate.set_color(YELLOW), run_time=duration_per_word * 0.8, rate_func=linear)
-            # Immediately after, revert the previous word (if any) to white.
-            if i > 0:
+            if i > 0:  # Reset previous words to white
                 self.play(word_mobjects[i-1].animate.set_color(WHITE), run_time=duration_per_word * 0.2, rate_func=linear)
-        # End: ensure the last word is reset to white.
-        if len(word_mobjects) > 0:
+
+        # Final cleanup: Reset last word to white
+        if word_mobjects:
             self.play(word_mobjects[-1].animate.set_color(WHITE), run_time=0.5)
 
-# ────────────────────────────────────────────────────────────────
-# 4. Main Driver: Load transcript and Render Karaoke Video
-# ────────────────────────────────────────────────────────────────
+# ————————————————
+# 4. Main Driver: Load transcript and render karaoke video
+# ————————————————
 def main():
     if not os.path.exists(SUMMARY_FILE):
         print("[ERROR] summaries.json not found. Run summarize.py first.")
@@ -148,20 +148,18 @@ def main():
         print("[WARN] summaries.json is empty.")
         return
 
-    # For demonstration, choose the first book & its first summary.
+    # Select first book & summary bullet
     book = books[0]
     title = book.get("title", "Untitled")
-    # Assume the full transcript is the complete summary text.
     transcript = book.get("summaries", [""])[0]
-    if not transcript.strip():
-        transcript = "No transcript available."
-
-    # Optionally, check for matching voice file.
-    voice_file = get_voice_file(title, part=1)
+    transcript = transcript.strip() or "No transcript available."
+    
+    # Check for matching voiceover file
+    voice_file = get_voice_file(title)
 
     safe_title = safe_name(title)
     
-    # Render the karaoke scene.
+    # Render Karaoke Scene
     output_filename = f"{safe_title}_karaoke.mp4"
     print(f"[INFO] Rendering karaoke video → {output_filename}")
     with tempconfig({
