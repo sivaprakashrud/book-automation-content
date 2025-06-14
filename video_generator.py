@@ -12,12 +12,15 @@ SUMMARY_FILE = os.path.join(DATA_DIR, "summaries.json")
 VIDEO_DIR = "videos"
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
-# Set your Creatomate API key here (get one by signing up at Creatomate.com)
-CREATOMATE_API_KEY = "YOUR_CREATOMATE_API_KEY_HERE"
+# Read your Creatomate API key from an environment variable (set this as a secret in GitHub)
+CREATOMATE_API_KEY = os.getenv("CREATOMATE_API_KEY")
+if not CREATOMATE_API_KEY:
+    print("[ERROR] The environment variable CREATOMATE_API_KEY is not set. Please set it as a GitHub secret or in your local environment.")
+    sys.exit(1)
 
-# Creatomate REST API endpoint for video rendering.
-# See documentation: https://creatomate.com/docs/api/introduction
-CREATOMATE_API_ENDPOINT = "https://api.creatomate.com/v1/videos/render"
+# Updated Creatomate API endpoint for video rendering.
+# Documentation: https://creatomate.com/docs/api/introduction
+CREATOMATE_API_ENDPOINT = "https://api.creatomate.com/v1/videos"
 
 # Instagram Reel constraints
 ASPECT_RATIO_WIDTH = 1080
@@ -67,7 +70,7 @@ def generate_ai_video(text_prompt: str, width: int, height: int, duration: int) 
                     "src": "https://creatomate-static.s3.amazonaws.com/demo/video1.mp4",
                     "track": 1,
                 },
-                # Overlay text element (this is our AI-generated explanation prompt)
+                # Overlay text element (the prompt that explains the summary)
                 {
                     "type": "text",
                     "text": text_prompt,
@@ -131,15 +134,14 @@ def main():
     title, transcript = load_summary()
     safe_title = safe_name(title)
     
-    # Create a text prompt that explains the summary.
-    # You can modify this to be more specific or split into bullet points as needed.
+    # Create a text prompt that visually explains the summary.
     text_prompt = (f"Create an Instagram Reel scene that visually explains the following summary:\n\n"
                    f"{transcript}\n\n"
                    "Style: Cinematic, animated, with smooth transitions. Format: 9:16.")
     print("[INFO] Generated text prompt for Creatomate API:")
     print(text_prompt)
     
-    # Call the Creatomate API to generate the video.
+    # Call the Creatomate API.
     video_url = generate_ai_video(text_prompt, ASPECT_RATIO_WIDTH, ASPECT_RATIO_HEIGHT, MAX_DURATION)
     
     # Download the generated video.
