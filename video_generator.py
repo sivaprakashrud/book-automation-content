@@ -12,13 +12,17 @@ SUMMARY_FILE = os.path.join(DATA_DIR, "summaries.json")
 VIDEO_DIR = "videos"
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
-# Hypothetical credentials for AI video generation.
-AI_VIDEO_API_ENDPOINT = "https://api.example-ai-video.com/generate"
-API_KEY = "YOUR_API_KEY_HERE"  # Replace with your actual API key
+# Set your Creatomate API key here (get one by signing up at Creatomate.com)
+CREATOMATE_API_KEY = "YOUR_CREATOMATE_API_KEY_HERE"
+
+# Creatomate REST API endpoint for video rendering.
+# See documentation: https://creatomate.com/docs/api/introduction
+CREATOMATE_API_ENDPOINT = "https://api.creatomate.com/v1/videos/render"
 
 # Instagram Reel constraints
-ASPECT_RATIO = "9:16"
-MAX_DURATION = 60  # seconds
+ASPECT_RATIO_WIDTH = 1080
+ASPECT_RATIO_HEIGHT = 1920
+MAX_DURATION = 45  # seconds
 
 # --- Helper Functions ---
 def safe_name(txt: str) -> str:
@@ -33,7 +37,7 @@ def load_summary():
     if not books:
         print("[WARN] summaries.json is empty.")
         sys.exit(1)
-    # For demonstration, we will use the first book's first summary.
+    # For demonstration, we use the first book's first summary.
     book = books[0]
     title = book.get("title", "Untitled")
     transcript = book.get("summaries", [""])[0].strip()
@@ -41,34 +45,56 @@ def load_summary():
         transcript = "No transcript available."
     return title, transcript
 
-def generate_ai_video(text_prompt: str, aspect_ratio: str = "9:16", duration: int = 60) -> str:
+def generate_ai_video(text_prompt: str, width: int, height: int, duration: int) -> str:
     """
-    Send a text prompt to the AI video generation API.
-    Returns the URL to the generated video (or downloads/saves the video locally).
-    
-    Note: This function assumes the API accepts JSON body with keys:
-      - "prompt" : the text input
-      - "aspect_ratio": a string like "9:16"
-      - "duration": desired video duration in seconds
-      
-    And returns a JSON response with the key "video_url".
+    Call the Creatomate API to generate a video.
+    This function builds a JSON payload for a video that combines:
+      - A background video element.
+      - An overlay text element using the text_prompt.
+    The video is rendered in a 9:16 format for Instagram Reels.
+    Returns the URL of the rendered video.
     """
     payload = {
-        "prompt": text_prompt,
-        "aspect_ratio": aspect_ratio,
-        "duration": duration
+        "source": {
+            "outputFormat": "mp4",
+            "width": width,
+            "height": height,
+            "duration": duration,
+            "elements": [
+                # Background video element (using one of Creatomate's demo videos)
+                {
+                    "type": "video",
+                    "src": "https://creatomate-static.s3.amazonaws.com/demo/video1.mp4",
+                    "track": 1,
+                },
+                # Overlay text element (this is our AI-generated explanation prompt)
+                {
+                    "type": "text",
+                    "text": text_prompt,
+                    "position": {"x": "50%", "y": "90%"},
+                    "style": {
+                        "fontSize": "48px",
+                        "color": "#FFFFFF",
+                        "textAlign": "center",
+                        "fontFamily": "Arial"
+                    },
+                },
+            ],
+        }
     }
+
     headers = {
-        "Authorization": f"Bearer {API_KEY}",
+        "Authorization": f"Bearer {CREATOMATE_API_KEY}",
         "Content-Type": "application/json"
     }
-    print("[INFO] Sending request to AI video generation API...")
-    response = requests.post(AI_VIDEO_API_ENDPOINT, json=payload, headers=headers)
+
+    print("[INFO] Sending request to Creatomate API...")
+    response = requests.post(CREATOMATE_API_ENDPOINT, json=payload, headers=headers)
     if response.status_code != 200:
-        print("[ERROR] AI video generation API request failed:", response.text)
+        print("[ERROR] Creatomate API request failed:", response.text)
         sys.exit(1)
     data = response.json()
-    video_url = data.get("video_url")
+    video_url = data.get("url")
     if not video_url:
         print("[ERROR] API response missing video URL")
         sys.exit(1)
@@ -93,29 +119,28 @@ def download_video(video_url: str, output_path: str):
 def post_to_instagram(video_path: str, caption: str):
     """
     Placeholder function for posting the video as an Instagram Reel.
-    Posting to Instagram requires using the Facebook Graph API and proper authentication.
+    Posting to Instagram requires using the Facebook Graph API with proper authentication.
     For details, see: https://developers.facebook.com/docs/instagram-api
     """
     print(f"[INFO] Posting video {video_path} with caption: {caption}")
-    # You would implement the Facebook Graph API call here.
-    # For example, using requests to POST the video file along with caption with proper access tokens.
-    # This example simply prints a confirmation.
+    # Implement actual Instagram posting logic (using the Graph API) here.
     print("[INFO] Video posted to Instagram (simulated).")
-
 
 # --- Main Driver ---
 def main():
     title, transcript = load_summary()
     safe_title = safe_name(title)
     
-    # Create a custom text prompt that explains the summary.
-    # You could refine this prompt based on your summary content.
-    text_prompt = f"Create an Instagram Reel scene that visually explains the following summary:\n\n{transcript}\n\nStyle: Cinematic, animated, with transitions. Format: 9:16."
-    print("[INFO] Generated text prompt for AI video generation:")
+    # Create a text prompt that explains the summary.
+    # You can modify this to be more specific or split into bullet points as needed.
+    text_prompt = (f"Create an Instagram Reel scene that visually explains the following summary:\n\n"
+                   f"{transcript}\n\n"
+                   "Style: Cinematic, animated, with smooth transitions. Format: 9:16.")
+    print("[INFO] Generated text prompt for Creatomate API:")
     print(text_prompt)
     
-    # Call the AI video generation API.
-    video_url = generate_ai_video(text_prompt, aspect_ratio=ASPECT_RATIO, duration=MAX_DURATION)
+    # Call the Creatomate API to generate the video.
+    video_url = generate_ai_video(text_prompt, ASPECT_RATIO_WIDTH, ASPECT_RATIO_HEIGHT, MAX_DURATION)
     
     # Download the generated video.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -123,13 +148,8 @@ def main():
     output_path = os.path.join(VIDEO_DIR, output_filename)
     download_video(video_url, output_path)
     
-    # (Optional) You might want to add additional processing here (crop/resize)
-    # For example, using FFmpeg to ensure the video is exactly 9:16.
-    # This can be done via:
-    # subprocess.run(["ffmpeg", "-i", output_path, "-vf", "scale=1080:1920", new_output_path])
-    
-    # Post to Instagram (placeholder function).
-    caption = f"Check out this reel on '{title}'! Generated via AI. #AI #Reel #Summary"
+    # Post to Instagram (placeholder).
+    caption = f"Check out this reel on '{title}'! Generated with AI. #AI #Reel #Summary"
     post_to_instagram(output_path, caption)
 
 if __name__ == "__main__":
