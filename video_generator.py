@@ -12,6 +12,8 @@ Requirements:
   - Summaries must be available in data/summaries.json.
   - Optionally, a voiceover file exists in voices/ matching the book title & part.
 """
+import sys
+print("Python executable:", sys.executable)
 
 import os, json, re, sys, subprocess, importlib.util, random
 from manim import *
