@@ -20,7 +20,7 @@ if not CREATOMATE_API_KEY:
 
 # Updated Creatomate API endpoint for video rendering.
 # Documentation: https://creatomate.com/docs/api/introduction
-CREATOMATE_API_ENDPOINT = "https://api.creatomate.com/v1/videos"
+CREATOMATE_API_ENDPOINT = "https://api.creatomate.com/v1/renders"
 
 # Instagram Reel constraints
 ASPECT_RATIO_WIDTH = 1080
