@@ -44,12 +44,9 @@ def load_summary() -> tuple[str, str]:
     return title, summary
 
 # ────────────────────────────────────────────────────────────────
-# Creatomate API helpers
+# Creatomate API helpers  – patched to accept 202 + array payload
 # ────────────────────────────────────────────────────────────────
 def start_render(prompt: str) -> str:
-    """
-    Send a render request. Returns the render ID.
-    """
     payload = {
         "source": {
             "output_format": "mp4",
@@ -57,13 +54,11 @@ def start_render(prompt: str) -> str:
             "height": HEIGHT,
             "duration": MAX_DURATION,
             "elements": [
-                # Background demo clip (replace with your own if desired)
                 {
                     "type": "video",
                     "src": "https://creatomate-static.s3.amazonaws.com/demo/video1.mp4",
                     "track": 1
                 },
-                # Overlay text near bottom
                 {
                     "type": "text",
                     "text": prompt,
@@ -84,13 +79,25 @@ def start_render(prompt: str) -> str:
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
     }
-    r = requests.post(API_RENDER, json=payload, headers=headers, timeout=30)
-    if r.status_code != 200:
-        sys.exit(f"[ERROR] Creatomate render start failed {r.status_code}: {r.text}")
-    render_id = r.json()["id"]
-    print(f"[INFO] Render started, id={render_id}")
-    return render_id
 
+    r = requests.post(API_RENDER, json=payload, headers=headers, timeout=30)
+
+    # The render service returns 202 Accepted with an ARRAY payload:
+    #   [{"id": "...", "status": "planned", ...}]
+    if r.status_code not in (200, 202):
+        sys.exit(f"[ERROR] Creatomate render start failed "
+                 f"{r.status_code}: {r.text}")
+
+    data = r.json()
+    if isinstance(data, list):          # normal case (HTTP 202)
+        data = data[0]
+
+    render_id = data.get("id")
+    if not render_id:
+        sys.exit(f"[ERROR] Could not find render ID in response: {data}")
+
+    print(f"[INFO] Render queued, id={render_id}")
+    return render_id
 def poll_render(render_id: str) -> str:
     """
     Poll until status == finished. Returns final video URL.
