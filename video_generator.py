@@ -58,33 +58,30 @@ def generate_ai_video(text_prompt: str, width: int, height: int, duration: int) 
     Returns the URL of the rendered video.
     """
     payload = {
-        "source": {
-            "outputFormat": "mp4",
-            "width": width,
-            "height": height,
-            "duration": duration,
-            "elements": [
-                # Background video element (using one of Creatomate's demo videos)
-                {
-                    "type": "video",
-                    "src": "https://creatomate-static.s3.amazonaws.com/demo/video1.mp4",
-                    "track": 1,
+    "outputFormat": "mp4",  # Ensures that the API knows to render a video
+    "width": ASPECT_RATIO_WIDTH,
+    "height": ASPECT_RATIO_HEIGHT,
+    "duration": MAX_DURATION,
+    "elements": [
+        {
+            "type": "video",
+            "src": "https://creatomate-static.s3.amazonaws.com/demo/video1.mp4",
+            "track": 1,
+        },
+        {
+            "type": "text",
+            "text": text_prompt,
+            "position": {"x": "50%", "y": "90%"},
+            "style": {
+                "fontSize": "48px",
+                "color": "#FFFFFF",
+                "textAlign": "center",
+                "fontFamily": "Arial"
                 },
-                # Overlay text element (the prompt that explains the summary)
-                {
-                    "type": "text",
-                    "text": text_prompt,
-                    "position": {"x": "50%", "y": "90%"},
-                    "style": {
-                        "fontSize": "48px",
-                        "color": "#FFFFFF",
-                        "textAlign": "center",
-                        "fontFamily": "Arial"
-                    },
-                },
-            ],
-        }
+            },
+        ],
     }
+    
 
     headers = {
         "Authorization": f"Bearer {CREATOMATE_API_KEY}",
