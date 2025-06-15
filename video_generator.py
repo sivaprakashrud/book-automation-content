@@ -1,155 +1,139 @@
-import os
-import json
-import re
-import sys
-import subprocess
-import requests
+"""
+Generate an Instagram-Reel-ready MP4 via Creatomate,
+download it, and (optionally) hand it off for Instagram upload.
+"""
+
+import os, json, re, sys, time, requests
 from datetime import datetime
 
-# --- Configuration ---
-DATA_DIR = "data"
-SUMMARY_FILE = os.path.join(DATA_DIR, "summaries.json")
-VIDEO_DIR = "videos"
+# ────────────────────────────────────────────────────────────────
+# Config & constants
+# ────────────────────────────────────────────────────────────────
+DATA_DIR        = "data"
+SUMMARY_FILE    = os.path.join(DATA_DIR, "summaries.json")
+VIDEO_DIR       = "videos"
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
-# Read your Creatomate API key from an environment variable (set this as a secret in GitHub)
-CREATOMATE_API_KEY = os.getenv("CREATOMATE_API_KEY")
-if not CREATOMATE_API_KEY:
-    print("[ERROR] The environment variable CREATOMATE_API_KEY is not set. Please set it as a GitHub secret or in your local environment.")
-    sys.exit(1)
+API_KEY         = os.getenv("CREATOMATE_API_KEY")
+if not API_KEY:
+    sys.exit(
+        "[ERROR] Environment variable CREATOMATE_API_KEY is missing.\n"
+        "Add it as a repo secret (Actions → Secrets → New) or `export` it locally."
+    )
 
-# Updated Creatomate API endpoint for video rendering.
-# Documentation: https://creatomate.com/docs/api/introduction
-CREATOMATE_API_ENDPOINT = "https://api.creatomate.com/v1/renders"
+API_RENDER      = "https://api.creatomate.com/v1/renders"
+POLL_INTERVAL   = 5        # seconds
+MAX_DURATION    = 45       # sec for a Reel
+WIDTH, HEIGHT   = 1080, 1920
 
-# Instagram Reel constraints
-ASPECT_RATIO_WIDTH = 1080
-ASPECT_RATIO_HEIGHT = 1920
-MAX_DURATION = 45  # seconds
+# ────────────────────────────────────────────────────────────────
+# Helper
+# ────────────────────────────────────────────────────────────────
+def safe_name(text: str) -> str:
+    return re.sub(r'[\\/*?:"<>|()\']', "", text.replace(" ", "_"))
 
-# --- Helper Functions ---
-def safe_name(txt: str) -> str:
-    return re.sub(r'[\\/*?:"<>|()\']', "", txt.replace(" ", "_"))
-
-def load_summary():
+def load_summary() -> tuple[str, str]:
     if not os.path.exists(SUMMARY_FILE):
-        print("[ERROR] summaries.json not found. Run summarize.py first.")
-        sys.exit(1)
+        sys.exit("[ERROR] summaries.json missing – run summarize.py first.")
     with open(SUMMARY_FILE, encoding="utf-8") as f:
         books = json.load(f)
     if not books:
-        print("[WARN] summaries.json is empty.")
-        sys.exit(1)
-    # For demonstration, we use the first book's first summary.
-    book = books[0]
-    title = book.get("title", "Untitled")
-    transcript = book.get("summaries", [""])[0].strip()
-    if not transcript:
-        transcript = "No transcript available."
-    return title, transcript
+        sys.exit("[ERROR] summaries.json is empty.")
+    title = books[0].get("title", "Untitled")
+    summary = books[0].get("summaries", [""])[0].strip() or "No summary."
+    return title, summary
 
-def generate_ai_video(text_prompt: str, width: int, height: int, duration: int) -> str:
+# ────────────────────────────────────────────────────────────────
+# Creatomate API helpers
+# ────────────────────────────────────────────────────────────────
+def start_render(prompt: str) -> str:
     """
-    Call the Creatomate API to generate a video.
-    This function builds a JSON payload for a video that combines:
-      - A background video element.
-      - An overlay text element using the text_prompt.
-    The video is rendered in a 9:16 format for Instagram Reels.
-    Returns the URL of the rendered video.
+    Send a render request. Returns the render ID.
     """
     payload = {
-    "outputFormat": "mp4",  # Ensures that the API knows to render a video
-    "width": ASPECT_RATIO_WIDTH,
-    "height": ASPECT_RATIO_HEIGHT,
-    "duration": MAX_DURATION,
-    "elements": [
-        {
-            "type": "video",
-            "src": "https://creatomate-static.s3.amazonaws.com/demo/video1.mp4",
-            "track": 1,
-        },
-        {
-            "type": "text",
-            "text": text_prompt,
-            "position": {"x": "50%", "y": "90%"},
-            "style": {
-                "fontSize": "48px",
-                "color": "#FFFFFF",
-                "textAlign": "center",
-                "fontFamily": "Arial"
+        "source": {
+            "output_format": "mp4",
+            "width": WIDTH,
+            "height": HEIGHT,
+            "duration": MAX_DURATION,
+            "elements": [
+                # Background demo clip (replace with your own if desired)
+                {
+                    "type": "video",
+                    "src": "https://creatomate-static.s3.amazonaws.com/demo/video1.mp4",
+                    "track": 1
                 },
-            },
-        ],
+                # Overlay text near bottom
+                {
+                    "type": "text",
+                    "text": prompt,
+                    "position": {"x": "50%", "y": "90%"},
+                    "style": {
+                        "font_size": "48px",
+                        "color": "#FFFFFF",
+                        "text_align": "center",
+                        "font_family": "Arial",
+                        "shadow_color": "#000000",
+                        "shadow_blur": 4
+                    }
+                }
+            ]
+        }
     }
-    
-
     headers = {
-        "Authorization": f"Bearer {CREATOMATE_API_KEY}",
+        "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
     }
+    r = requests.post(API_RENDER, json=payload, headers=headers, timeout=30)
+    if r.status_code != 200:
+        sys.exit(f"[ERROR] Creatomate render start failed {r.status_code}: {r.text}")
+    render_id = r.json()["id"]
+    print(f"[INFO] Render started, id={render_id}")
+    return render_id
 
-    print("[INFO] Sending request to Creatomate API...")
-    response = requests.post(CREATOMATE_API_ENDPOINT, json=payload, headers=headers)
-    if response.status_code != 200:
-        print("[ERROR] Creatomate API request failed:", response.text)
-        sys.exit(1)
-    data = response.json()
-    video_url = data.get("url")
-    if not video_url:
-        print("[ERROR] API response missing video URL")
-        sys.exit(1)
-    print("[INFO] Video generated successfully. Video URL:", video_url)
-    return video_url
+def poll_render(render_id: str) -> str:
+    """
+    Poll until status == finished. Returns final video URL.
+    """
+    url = f"{API_RENDER}/{render_id}"
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    while True:
+        r = requests.get(url, headers=headers, timeout=15)
+        if r.status_code != 200:
+            sys.exit(f"[ERROR] Poll failed {r.status_code}: {r.text}")
+        data = r.json()
+        status = data["status"]
+        print(f"[INFO] Render status: {status}")
+        if status == "finished":
+            return data["url"]
+        if status in {"failed", "cancelled"}:
+            sys.exit(f"[ERROR] Render {status}: {data}")
+        time.sleep(POLL_INTERVAL)
 
-def download_video(video_url: str, output_path: str):
-    """
-    Download the video from the provided URL and save it locally.
-    """
-    print(f"[INFO] Downloading video from {video_url}")
-    r = requests.get(video_url, stream=True)
-    if r.status_code == 200:
-        with open(output_path, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
+def download_file(file_url: str, out_path: str):
+    print(f"[INFO] Downloading: {file_url}")
+    with requests.get(file_url, stream=True) as r:
+        r.raise_for_status()
+        with open(out_path, "wb") as f:
+            for chunk in r.iter_content(8192):
                 f.write(chunk)
-        print(f"[INFO] Video saved to {output_path}")
-    else:
-        print("[ERROR] Failed to download video:", r.text)
-        sys.exit(1)
+    print(f"[INFO] Saved to {out_path}")
 
-def post_to_instagram(video_path: str, caption: str):
-    """
-    Placeholder function for posting the video as an Instagram Reel.
-    Posting to Instagram requires using the Facebook Graph API with proper authentication.
-    For details, see: https://developers.facebook.com/docs/instagram-api
-    """
-    print(f"[INFO] Posting video {video_path} with caption: {caption}")
-    # Implement actual Instagram posting logic (using the Graph API) here.
-    print("[INFO] Video posted to Instagram (simulated).")
-
-# --- Main Driver ---
+# ────────────────────────────────────────────────────────────────
+# Main
+# ────────────────────────────────────────────────────────────────
 def main():
-    title, transcript = load_summary()
-    safe_title = safe_name(title)
-    
-    # Create a text prompt that visually explains the summary.
-    text_prompt = (f"Create an Instagram Reel scene that visually explains the following summary:\n\n"
-                   f"{transcript}\n\n"
-                   "Style: Cinematic, animated, with smooth transitions. Format: 9:16.")
-    print("[INFO] Generated text prompt for Creatomate API:")
-    print(text_prompt)
-    
-    # Call the Creatomate API.
-    video_url = generate_ai_video(text_prompt, ASPECT_RATIO_WIDTH, ASPECT_RATIO_HEIGHT, MAX_DURATION)
-    
-    # Download the generated video.
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_filename = f"{safe_title}_reel_{timestamp}.mp4"
-    output_path = os.path.join(VIDEO_DIR, output_filename)
-    download_video(video_url, output_path)
-    
-    # Post to Instagram (placeholder).
-    caption = f"Check out this reel on '{title}'! Generated with AI. #AI #Reel #Summary"
-    post_to_instagram(output_path, caption)
+    title, summary = load_summary()
+    prompt = f"Instagram Reel visualising the summary:\n{summary}"
+    render_id = start_render(prompt)
+    video_url = poll_render(render_id)
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_file = os.path.join(VIDEO_DIR, f"{safe_name(title)}_{ts}.mp4")
+    download_file(video_url, out_file)
+
+    print("[SUCCESS] Reel ready:", out_file)
+    # TODO: upload via Instagram Graph API
 
 if __name__ == "__main__":
     main()
