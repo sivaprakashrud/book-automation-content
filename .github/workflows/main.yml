@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}  # ✅ Securely using secrets
+      # Inject the secret into the environment variable
+      CREATOMATE_API_KEY: ${{ secrets.CREATOMATE_API_KEY }}
 
     steps:
       - name: Checkout repo
