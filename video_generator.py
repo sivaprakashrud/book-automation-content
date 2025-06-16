@@ -46,6 +46,9 @@ def load_summary() -> tuple[str, str]:
 # ────────────────────────────────────────────────────────────────
 # Creatomate API helpers  – patched to accept 202 + array payload
 # ────────────────────────────────────────────────────────────────
+MAX_WAIT_SEC   = 15 * 60   # 15-minute safety cap
+DOT_INTERVAL   = 15        # seconds between “still waiting …” dots
+
 def start_render(prompt: str) -> str:
     payload = {
         "source": {
@@ -75,48 +78,59 @@ def start_render(prompt: str) -> str:
             ]
         }
     }
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
+    r = requests.post(
+        API_RENDER + "?wait=true",    # <── wait for finished render
+        json=payload,
+        headers={"Authorization": f"Bearer {API_KEY}"},
+        timeout=MAX_WAIT_SEC + 30     # allow socket a bit longer
+    )
 
-    r = requests.post(API_RENDER, json=payload, headers=headers, timeout=30)
-
-    # The render service returns 202 Accepted with an ARRAY payload:
-    #   [{"id": "...", "status": "planned", ...}]
     if r.status_code not in (200, 202):
-        sys.exit(f"[ERROR] Creatomate render start failed "
-                 f"{r.status_code}: {r.text}")
+        sys.exit(f"[ERROR] render start failed {r.status_code}: {r.text}")
 
     data = r.json()
-    if isinstance(data, list):          # normal case (HTTP 202)
+    if isinstance(data, list):
         data = data[0]
 
-    render_id = data.get("id")
-    if not render_id:
-        sys.exit(f"[ERROR] Could not find render ID in response: {data}")
+    render_id = data["id"]
+    status    = data["status"]
 
-    print(f"[INFO] Render queued, id={render_id}")
-    return render_id
+    if status == "finished":
+        print(f"[INFO] Render done instantly, id={render_id}", flush=True)
+        return render_id, data["url"]
+
+    # ───── fallback: we got 202 + planned ─────
+    print(f"[INFO] Render queued (id={render_id}). Falling back to poll …",
+          flush=True)
+    return render_id, None
+
+
 def poll_render(render_id: str) -> str:
-    """
-    Poll until status == finished. Returns final video URL.
-    """
     url = f"{API_RENDER}/{render_id}"
     headers = {"Authorization": f"Bearer {API_KEY}"}
-    while True:
-        r = requests.get(url, headers=headers, timeout=15)
+
+    waited = 0
+    while waited < MAX_WAIT_SEC:
+        r = requests.get(url, headers=headers, timeout=30)
         if r.status_code != 200:
             sys.exit(f"[ERROR] Poll failed {r.status_code}: {r.text}")
+
         data = r.json()
         status = data["status"]
-        print(f"[INFO] Render status: {status}")
         if status == "finished":
+            print(f"\n[INFO] Render finished in {waited} s", flush=True)
             return data["url"]
         if status in {"failed", "cancelled"}:
             sys.exit(f"[ERROR] Render {status}: {data}")
-        time.sleep(POLL_INTERVAL)
 
+        print(".", end="", flush=True)
+        time.sleep(DOT_INTERVAL)
+        waited += DOT_INTERVAL
+
+    # safety stop
+    print("\n[WARN] Max wait exceeded, cancelling render …", flush=True)
+    requests.delete(url, headers=headers, timeout=10)
+    sys.exit("[ERROR] Render timed-out and was cancelled")
 def download_file(file_url: str, out_path: str):
     print(f"[INFO] Downloading: {file_url}")
     with requests.get(file_url, stream=True) as r:
