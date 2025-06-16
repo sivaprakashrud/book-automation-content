@@ -50,73 +50,39 @@ MAX_WAIT_SEC   = 15 * 60   # 15-minute safety cap
 DOT_INTERVAL   = 15        # seconds between “still waiting …” dots
 
 def start_render(prompt: str) -> str:
-    payload = {
-        "source": {
-            "output_format": "mp4",
-            "width": WIDTH,
-            "height": HEIGHT,
-            "duration": MAX_DURATION,
-            "elements": [
-                {
-                    "type": "video",
-                    "src": "https://creatomate-static.s3.amazonaws.com/demo/video1.mp4",
-                    "track": 1
-                },
-                {
-                    "type": "text",
-                    "text": prompt,
-                    "position": {"x": "50%", "y": "90%"},
-                    "style": {
-                        "font_size": "48px",
-                        "color": "#FFFFFF",
-                        "text_align": "center",
-                        "font_family": "Arial",
-                        "shadow_color": "#000000",
-                        "shadow_blur": 4
-                    }
-                }
-            ]
-        }
-    }
-    r = requests.post(
-        API_RENDER + "?wait=true",    # <── wait for finished render
-        json=payload,
-        headers={"Authorization": f"Bearer {API_KEY}"},
-        timeout=MAX_WAIT_SEC + 30     # allow socket a bit longer
-    )
-
-    if r.status_code not in (200, 202):
-        sys.exit(f"[ERROR] render start failed {r.status_code}: {r.text}")
-
+    ...
     data = r.json()
     if isinstance(data, list):
-        data = data[0]
+        data = data[0]  # Ensure we extract a valid render object
 
-    render_id = data["id"]
-    status    = data["status"]
+    render_id = data.get("id")
+    if not render_id or not re.match(r"^[0-9a-fA-F-]{36}$", render_id):
+        sys.exit(f"[ERROR] Received invalid render ID: {render_id}")
 
-    if status == "finished":
-        print(f"[INFO] Render done instantly, id={render_id}", flush=True)
-        return render_id, data["url"]
-
-    # ───── fallback: we got 202 + planned ─────
-    print(f"[INFO] Render queued (id={render_id}). Falling back to poll …",
-          flush=True)
-    return render_id, None
-
+    print(f"[INFO] Render queued, id={render_id}")
+    return render_id
 
 def poll_render(render_id: str) -> str:
+    if not re.match(r"^[0-9a-fA-F-]{36}$", render_id):
+        sys.exit(f"[ERROR] Invalid render ID format: {render_id}")
+
     url = f"{API_RENDER}/{render_id}"
     headers = {"Authorization": f"Bearer {API_KEY}"}
 
     waited = 0
     while waited < MAX_WAIT_SEC:
         r = requests.get(url, headers=headers, timeout=30)
+        if r.status_code == 400:
+            sys.exit(f"[ERROR] Invalid render ID: {render_id} (Must be a UUID)")
+
         if r.status_code != 200:
             sys.exit(f"[ERROR] Poll failed {r.status_code}: {r.text}")
 
         data = r.json()
-        status = data["status"]
+        if isinstance(data, list):  
+            data = data[0]  # Ensure we process the first item
+
+        status = data.get("status")
         if status == "finished":
             print(f"\n[INFO] Render finished in {waited} s", flush=True)
             return data["url"]
@@ -127,10 +93,8 @@ def poll_render(render_id: str) -> str:
         time.sleep(DOT_INTERVAL)
         waited += DOT_INTERVAL
 
-    # safety stop
-    print("\n[WARN] Max wait exceeded, cancelling render …", flush=True)
-    requests.delete(url, headers=headers, timeout=10)
-    sys.exit("[ERROR] Render timed-out and was cancelled")
+    sys.exit("[ERROR] Render timeout: >30 min")
+
 def download_file(file_url: str, out_path: str):
     print(f"[INFO] Downloading: {file_url}")
     with requests.get(file_url, stream=True) as r:
