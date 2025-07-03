@@ -48,7 +48,20 @@ def load_summary() -> tuple[str, str]:
 # ────────────────────────────────────────────────────────────────
 MAX_WAIT_SEC   = 15 * 60   # 15-minute safety cap
 DOT_INTERVAL   = 15        # seconds between “still waiting …” dots
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+r = requests.post(API_RENDER + "?wait=true", json=payload, headers=headers, timeout=30)
 
+if r.status_code not in (200, 202):
+    sys.exit(f"[ERROR] Creatomate render start failed {r.status_code}: {r.text}")
+
+data = r.json()
+if isinstance(data, list):  # Sometimes API returns a list
+    data = data[0]
+
+render_id = data.get("id")
 def start_render(prompt: str) -> str:
     ...
     data = r.json()
